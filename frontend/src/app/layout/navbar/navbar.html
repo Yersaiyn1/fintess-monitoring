@@ -1,0 +1,20 @@
+<header class="navbar">
+  <button type="button" class="burger" aria-label="Open menu" (click)="menuToggle.emit()">
+    <app-icon name="menu" [size]="22" />
+  </button>
+
+  <div class="heading">
+    <h1>{{ title() }}</h1>
+    <p>{{ today }}</p>
+  </div>
+
+  <div class="actions">
+    <button type="button" class="icon-btn" aria-label="Notifications">
+      <app-icon name="bell" [size]="20" />
+    </button>
+    <div class="user">
+      <span class="avatar" aria-hidden="true">AC</span>
+      <span class="who">Alex Carter</span>
+    </div>
+  </div>
+</header>

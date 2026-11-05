@@ -1,0 +1,20 @@
+:host { display: block; }
+
+.shell { min-height: 100vh; }
+
+.side { position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); z-index: 30; }
+.scrim { display: none; }
+
+.main { margin-left: var(--sidebar-w); min-height: 100vh; }
+.content { padding: 18px 32px 40px; max-width: 1280px; }
+
+@media (max-width: 900px) {
+  .main { margin-left: 0; }
+  .content { padding: 14px 18px 32px; }
+  .side { transform: translateX(-100%); transition: transform 220ms ease; }
+  .open .side { transform: none; box-shadow: 0 0 40px rgba(0, 0, 0, 0.3); }
+  .open .scrim {
+    display: block; position: fixed; inset: 0; z-index: 20;
+    border: 0; background: rgba(16, 26, 28, 0.5);
+  }
+}

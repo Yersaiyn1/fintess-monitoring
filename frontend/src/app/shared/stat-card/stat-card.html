@@ -1,0 +1,15 @@
+<article class="card" [attr.data-tone]="data().tone">
+  <span class="chip"><app-icon [name]="data().icon" [size]="20" /></span>
+  <p class="label">{{ data().label }}</p>
+  <p class="value">
+    <span class="num">{{ data().value | number: digits() }}</span>
+    @if (data().unit) { <span class="unit">{{ data().unit }}</span> }
+  </p>
+  <p class="trend" [attr.data-trend]="trend()">
+    @switch (trend()) {
+      @case ('up') { <app-icon name="arrow-up" [size]="14" /> {{ data().change }}% vs yesterday }
+      @case ('down') { <app-icon name="arrow-down" [size]="14" /> {{ -data().change }}% vs yesterday }
+      @default { Same as yesterday }
+    }
+  </p>
+</article>

@@ -1,0 +1,8 @@
+<div class="ring" role="img" [attr.aria-label]="label() + ': ' + percent() + '%'">
+  <svg [attr.width]="size()" [attr.height]="size()" [attr.viewBox]="'0 0 ' + size() + ' ' + size()">
+    <circle class="track" [attr.cx]="size() / 2" [attr.cy]="size() / 2" [attr.r]="radius()" [attr.stroke-width]="stroke()" />
+    <circle class="bar" [attr.cx]="size() / 2" [attr.cy]="size() / 2" [attr.r]="radius()" [attr.stroke-width]="stroke()"
+      [attr.stroke-dasharray]="circumference()" [attr.stroke-dashoffset]="offset()" />
+  </svg>
+  <div class="center"><ng-content /></div>
+</div>

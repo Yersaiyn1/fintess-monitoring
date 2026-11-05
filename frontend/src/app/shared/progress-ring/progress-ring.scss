@@ -1,0 +1,11 @@
+:host { display: inline-block; }
+.ring { position: relative; display: grid; place-items: center; }
+svg { transform: rotate(-90deg); }
+circle { fill: none; }
+.track { stroke: rgba(255, 255, 255, 0.1); }
+.bar {
+  stroke: var(--mint);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }

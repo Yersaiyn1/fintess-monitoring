@@ -1,0 +1,55 @@
+/* Design tokens — Pulse: chalk surface, pool-deck ink, lane-line accents */
+:root {
+  --chalk: #eceee8;
+  --surface: #fbfbf8;
+  --ink: #101a1c;
+  --ink-soft: #1b2a2d;
+  --ink-muted: #5d6b6d;
+  --line: #d9ddd4;
+  --cobalt: #2f4bff;
+  --mint: #19b58a;
+  --amber: #f0a52c;
+  --coral: #f2584a;
+
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+
+  --radius-lg: 22px;
+  --radius-md: 14px;
+  --radius-sm: 8px;
+  --sidebar-w: 248px;
+  --focus: 0 0 0 3px rgba(47, 75, 255, 0.45);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--chalk);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p { margin: 0; }
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+
+a { color: inherit; text-decoration: none; }
+
+:focus-visible { outline: none; box-shadow: var(--focus); border-radius: var(--radius-sm); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

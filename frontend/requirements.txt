@@ -1,0 +1,35 @@
+# Fitness Monitoring (Pulse) — requirements
+# Это Angular-проект: зависимости ставятся через npm (файл package.json).
+# Этот файл — справочный список. Установка: npm install
+
+## Окружение
+Node.js        ^20.19.0 || ^22.12.0 || >=24.0.0   (проверка: node -v)
+npm            >=8                                 (проверка: npm -v)
+Angular CLI    21.2.7                              (ставится локально, глобально не нужен)
+ОС             Windows 10/11, macOS, Linux
+Браузер        актуальный Chrome / Edge / Firefox
+
+## Dependencies
+@angular/common            21.2.7
+@angular/compiler          21.2.7
+@angular/core              21.2.7
+@angular/forms             21.2.7
+@angular/platform-browser  21.2.7
+@angular/router            21.2.7
+rxjs                       ~7.8.0
+tslib                      ^2.3.0
+
+## DevDependencies
+@angular/build             21.2.7
+@angular/cli               21.2.7
+@angular/compiler-cli      21.2.7
+typescript                 ~5.9.2
+vitest                     ^4.0.8
+jsdom                      ^28.0.0
+prettier                   ^3.8.1
+
+## Команды
+npm install        # установка зависимостей
+npm start          # запуск: http://localhost:4200
+npm test           # юнит-тесты (Vitest)
+npm run build      # production-сборка в dist/

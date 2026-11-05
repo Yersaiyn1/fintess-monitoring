@@ -1,0 +1,63 @@
+<div class="grid">
+  <!-- Today's goal -->
+  <section class="hero" aria-labelledby="goal-title">
+    <h2 id="goal-title" class="sr-only">Daily step goal</h2>
+    <app-progress-ring [progress]="progress()" [size]="230" [stroke]="18" label="Daily step goal">
+      <span class="steps">{{ today().steps | number }}</span>
+      <span class="of">of {{ goal() | number }} steps</span>
+    </app-progress-ring>
+
+    <p class="summary">
+      @if (goalReached()) {
+        Daily goal reached. Everything from here is a bonus.
+      } @else {
+        <strong>{{ remaining() | number }} steps</strong> to go. A 25-minute walk gets you there.
+      }
+    </p>
+  </section>
+
+  <!-- Stat cards -->
+  <section class="stats" aria-label="Today's statistics">
+    @for (s of stats(); track s.id) {
+      <app-stat-card [data]="s" />
+    }
+  </section>
+
+  <!-- Weekly chart -->
+  <section class="panel weekly" aria-labelledby="week-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="week-title">Last 7 days</h2>
+        <p class="muted">{{ weekTotal() | number: (metric().decimals ? '1.1-1' : '1.0-0') }} {{ metric().unit }} in total</p>
+      </div>
+      <div class="segmented" role="group" aria-label="Chart metric">
+        @for (m of metrics; track m.key) {
+          <button type="button" [class.on]="metric().key === m.key" [attr.aria-pressed]="metric().key === m.key" (click)="select(m)">
+            {{ m.label }}
+          </button>
+        }
+      </div>
+    </div>
+    <app-bar-chart [bars]="bars()" [goal]="chartGoal()" [unit]="metric().unit" [decimals]="metric().decimals" />
+  </section>
+
+  <!-- Recent workouts -->
+  <section class="panel recent" aria-labelledby="recent-title">
+    <h2 id="recent-title">Recent workouts</h2>
+    <ul>
+      @for (w of workouts(); track w.id) {
+        <li>
+          <span class="kind" [attr.data-kind]="w.kind"></span>
+          <div class="info">
+            <strong>{{ w.kind }}</strong>
+            <span class="muted">{{ w.when }}</span>
+          </div>
+          <div class="nums">
+            <strong>{{ w.durationMin }} min</strong>
+            <span class="muted">{{ w.calories }} kcal</span>
+          </div>
+        </li>
+      }
+    </ul>
+  </section>
+</div>

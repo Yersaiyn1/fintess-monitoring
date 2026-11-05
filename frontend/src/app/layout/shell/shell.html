@@ -1,0 +1,9 @@
+<div class="shell" [class.open]="menuOpen()">
+  <div class="side"><app-sidebar (navigated)="closeMenu()" (closeRequested)="closeMenu()" /></div>
+  <button type="button" class="scrim" aria-label="Close menu" tabindex="-1" (click)="closeMenu()"></button>
+
+  <div class="main">
+    <app-navbar [title]="pageTitle()" (menuToggle)="openMenu()" />
+    <main class="content"><router-outlet /></main>
+  </div>
+</div>

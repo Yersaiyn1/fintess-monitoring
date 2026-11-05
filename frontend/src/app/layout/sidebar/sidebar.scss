@@ -1,0 +1,30 @@
+:host { display: block; height: 100%; }
+
+.sidebar {
+  height: 100%;
+  display: flex; flex-direction: column; gap: 28px;
+  padding: 22px 16px;
+  background: var(--ink);
+  color: #d7dfdc;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+.name { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: #fff; letter-spacing: -0.02em; }
+.close { display: none; margin-left: auto; background: none; border: 0; color: inherit; padding: 6px; }
+
+nav { display: grid; gap: 4px; }
+
+.link {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 12px; border-radius: 12px;
+  color: #aebbb7; font-weight: 500;
+  transition: background-color 140ms, color 140ms;
+}
+.link:hover { background: var(--ink-soft); color: #fff; }
+.link.active { background: var(--mint); color: var(--ink); font-weight: 600; }
+
+.foot { margin-top: auto; padding: 0 8px; font-size: 12px; color: #6f807c; }
+
+@media (max-width: 900px) {
+  .close { display: inline-flex; }
+}

@@ -1,0 +1,30 @@
+<div class="chart" role="img" aria-label="Weekly activity chart">
+  <div class="plot">
+    @for (t of ticks(); track $index) {
+      <div class="grid-line" [style.bottom.%]="(t / axisMax()) * 100">
+        <span class="tick">{{ t | number: (decimals() ? '1.0-1' : '1.0-0') }}</span>
+      </div>
+    }
+
+    @if (goalBottom() !== null) {
+      <div class="goal" [style.bottom.%]="goalBottom()"><span>Goal</span></div>
+    }
+
+    <div class="bars">
+      @for (b of view(); track b.label + $index) {
+        <div class="col" [class.today]="b.isToday">
+          <div class="bar" [style.height.%]="b.height"
+               [attr.title]="b.label + ': ' + (b.value | number: digits()) + ' ' + unit()">
+            <span class="value">{{ b.value | number: digits() }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="labels">
+    @for (b of view(); track b.label + $index) {
+      <span [class.today]="b.isToday">{{ b.label }}</span>
+    }
+  </div>
+</div>

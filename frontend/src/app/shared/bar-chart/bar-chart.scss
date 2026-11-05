@@ -1,0 +1,59 @@
+:host { display: block; }
+
+.chart { --axis-w: 44px; }
+.plot { position: relative; height: 240px; margin-left: var(--axis-w); }
+
+.grid-line {
+  position: absolute; left: 0; right: 0; height: 0;
+  border-top: 1px dashed var(--line);
+}
+.tick {
+  position: absolute; right: calc(100% + 10px); top: -9px;
+  font-size: 12px; color: var(--ink-muted);
+}
+
+.goal {
+  position: absolute; left: 0; right: 0; height: 0;
+  border-top: 2px solid var(--mint); z-index: 2;
+}
+.goal span {
+  position: absolute; right: 0; top: -22px;
+  font-size: 12px; font-weight: 600; color: #0f8a68;
+  background: var(--surface); padding: 0 6px; border-radius: 6px;
+}
+
+.bars {
+  position: absolute; inset: 0; z-index: 1;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 14px;
+  align-items: end; padding: 0 6px;
+}
+.col { height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+
+.bar {
+  position: relative; width: min(100%, 46px);
+  min-height: 4px;
+  background: #cfd5f7;
+  border-radius: 10px 10px 4px 4px;
+  transition: height 600ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms;
+}
+.col:hover .bar { background: #9aa8f5; }
+.today .bar, .today:hover .bar { background: var(--cobalt); }
+
+.value {
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  opacity: 0; transition: opacity 120ms;
+}
+.col:hover .value, .today .value { opacity: 1; }
+
+.labels {
+  margin: 10px 0 0 var(--axis-w); padding: 0 6px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 14px;
+  text-align: center; font-size: 13px; color: var(--ink-muted);
+}
+.labels .today { color: var(--ink); font-weight: 600; }
+
+@media (max-width: 560px) {
+  .bars, .labels { gap: 6px; }
+  .plot { height: 200px; }
+}

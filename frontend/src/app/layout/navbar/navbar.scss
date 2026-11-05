@@ -1,0 +1,36 @@
+:host { display: block; }
+
+.navbar { display: flex; align-items: center; gap: 14px; padding: 22px 32px 6px; }
+
+.heading h1 { font-size: 28px; }
+.heading p { color: var(--ink-muted); font-size: 14px; margin-top: 2px; }
+
+.actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.icon-btn, .burger {
+  width: 42px; height: 42px; display: grid; place-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.icon-btn:hover, .burger:hover { background: #fff; }
+.burger { display: none; }
+
+.user {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 14px 4px 4px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px;
+}
+.avatar {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--cobalt); color: #fff; font-size: 13px; font-weight: 600;
+}
+.who { font-weight: 500; font-size: 14px; }
+
+@media (max-width: 900px) {
+  .navbar { padding: 16px 18px 4px; }
+  .burger { display: grid; }
+  .heading h1 { font-size: 22px; }
+}
+@media (max-width: 560px) {
+  .who { display: none; }
+  .user { padding-right: 4px; }
+}
