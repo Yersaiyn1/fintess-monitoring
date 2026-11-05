@@ -18,7 +18,7 @@ Website for monitoring health data from a fitness band. The band measures heart 
 |------|------------|
 | Backend | Python, FastAPI |
 | Database | PostgreSQL |
-| Frontend | React (or HTML/CSS/JS) |
+| Frontend | Angular|
 | Tests | pytest |
 
 ## Project structure
