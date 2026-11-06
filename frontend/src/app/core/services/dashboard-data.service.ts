@@ -1,18 +1,22 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { catchError, finalize } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { DailyActivity, RecentWorkout } from '../models/activity.model';
 import { StatCardData } from '../models/stat.model';
+import { DashboardApiService } from './api/dashboard-api.service';
 
-/**
- * Phase 1: supplies MOCK data for the Dashboard.
- * Later phases replace the mock source with real tracked activity,
- * while the public signals below stay the same, so components do not change.
- */
 @Injectable({ providedIn: 'root' })
 export class DashboardDataService {
+  private readonly api = inject(DashboardApiService);
+
   /** Daily step goal (becomes user-editable in Phase 4). */
   readonly dailyStepGoal = signal(10_000);
 
-  /** Last 7 days, oldest first; the last item is "today". */
+  /** Loading / error handling for API fetch */
+  readonly loading = signal<boolean>(true);
+  readonly error = signal<string | null>(null);
+
+  /** Last 7 days, oldest first; the last item is "today". Fallback to mock week on initial or empty. */
   readonly week = signal<DailyActivity[]>(this.buildMockWeek());
 
   readonly recentWorkouts = signal<RecentWorkout[]>([
@@ -22,8 +26,15 @@ export class DashboardDataService {
     { id: 4, kind: 'Yoga', durationMin: 30, calories: 96, when: 'Mon, 08:00' },
   ]);
 
-  readonly today = computed(() => this.week()[this.week().length - 1]);
-  private readonly yesterday = computed(() => this.week()[this.week().length - 2]);
+  readonly today = computed(() => {
+    const w = this.week();
+    return w.length > 0 ? w[w.length - 1] : this.fallbackToday();
+  });
+
+  private readonly yesterday = computed(() => {
+    const w = this.week();
+    return w.length > 1 ? w[w.length - 2] : this.today();
+  });
 
   readonly stepsProgress = computed(() =>
     Math.min(this.today().steps / this.dailyStepGoal(), 1),
@@ -47,8 +58,44 @@ export class DashboardDataService {
     ];
   });
 
+  constructor() {
+    this.fetchData();
+  }
+
+  fetchData(userId = 1): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.api
+      .getDashboard(userId)
+      .pipe(
+        catchError((err) => {
+          this.error.set('Не удалось загрузить данные с сервера');
+          console.error(err);
+          return of(null);
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe((resp) => {
+        if (resp && resp.week && resp.week.length > 0) {
+          this.week.set(resp.week);
+        }
+      });
+  }
+
   private delta(now: number, before: number): number {
     return before === 0 ? 0 : Math.round(((now - before) / before) * 100);
+  }
+
+  private fallbackToday(): DailyActivity {
+    return {
+      date: new Date().toISOString().slice(0, 10),
+      label: 'Today',
+      steps: 0,
+      calories: 0,
+      distanceKm: 0,
+      activeMinutes: 0,
+    };
   }
 
   private buildMockWeek(): DailyActivity[] {

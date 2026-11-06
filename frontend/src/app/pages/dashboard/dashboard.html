@@ -1,3 +1,7 @@
+@if (error()) {
+  <div class="error-banner">{{ error() }}</div>
+}
+
 <div class="grid">
   <!-- Today's goal -->
   <section class="hero" aria-labelledby="goal-title">

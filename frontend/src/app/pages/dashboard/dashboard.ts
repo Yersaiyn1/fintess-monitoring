@@ -23,6 +23,8 @@ interface MetricOption {
 export class Dashboard {
   private readonly data = inject(DashboardDataService);
 
+  protected readonly loading = this.data.loading;
+  protected readonly error = this.data.error;
   protected readonly today = this.data.today;
   protected readonly goal = this.data.dailyStepGoal;
   protected readonly progress = this.data.stepsProgress;
