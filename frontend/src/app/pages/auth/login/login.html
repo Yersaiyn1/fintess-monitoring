@@ -1,0 +1,46 @@
+<section class="card">
+  <div class="brand"><span class="mark" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="2" y="2" width="26" height="26" rx="9" fill="#19b58a"/><path d="M6 16h5l3-7 4 12 3-5h3" fill="none" stroke="#101a1c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Pulse</span></div>
+
+  <div>
+    <h1>Welcome back</h1>
+    <p class="lead">Log in to see your health data.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (serverError()) {
+      <p class="form-error" role="alert">{{ serverError() }}</p>
+    }
+
+    <div class="field">
+      <label for="email">Email</label>
+      <div class="control" [class.invalid]="error('email')">
+        <input id="email" type="email" formControlName="email" autocomplete="email"
+               placeholder="name@example.com"
+               [attr.aria-invalid]="error('email') ? 'true' : null"
+               [attr.aria-describedby]="error('email') ? 'email-err' : null" />
+      </div>
+      @if (error('email')) { <p class="error" id="email-err">{{ error('email') }}</p> }
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="control" [class.invalid]="error('password')">
+        <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+               autocomplete="current-password"
+               [attr.aria-invalid]="error('password') ? 'true' : null"
+               [attr.aria-describedby]="error('password') ? 'password-err' : null" />
+        <button type="button" class="toggle" (click)="showPassword.set(!showPassword())"
+                [attr.aria-pressed]="showPassword()">
+          {{ showPassword() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      @if (error('password')) { <p class="error" id="password-err">{{ error('password') }}</p> }
+    </div>
+
+    <button type="submit" class="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Logging in…' : 'Log in' }}
+    </button>
+  </form>
+
+  <p class="switch">No account yet? <a routerLink="/register">Create one</a></p>
+</section>

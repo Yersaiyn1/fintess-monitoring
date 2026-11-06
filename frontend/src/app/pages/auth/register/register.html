@@ -1,0 +1,75 @@
+<section class="card">
+  <div class="brand"><span class="mark" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 30 30"><rect x="2" y="2" width="26" height="26" rx="9" fill="#19b58a"/><path d="M6 16h5l3-7 4 12 3-5h3" fill="none" stroke="#101a1c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="name">Pulse</span></div>
+
+  <div>
+    <h1>Create account</h1>
+    <p class="lead">Start tracking your heart rate, steps and calories.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (serverError()) {
+      <p class="form-error" role="alert">{{ serverError() }}</p>
+    }
+
+    <div class="field">
+      <label for="fullName">Full name</label>
+      <div class="control" [class.invalid]="error('fullName')">
+        <input id="fullName" type="text" formControlName="fullName" autocomplete="name"
+               [attr.maxlength]="limits.fullNameMax"
+               [attr.aria-invalid]="error('fullName') ? 'true' : null" />
+      </div>
+      @if (error('fullName')) { <p class="error">{{ error('fullName') }}</p> }
+    </div>
+
+    <div class="field">
+      <label for="birthDate">Date of birth</label>
+      <div class="control" [class.invalid]="error('birthDate')">
+        <input id="birthDate" type="date" formControlName="birthDate" autocomplete="bday"
+               [max]="today" min="1900-01-01"
+               [attr.aria-invalid]="error('birthDate') ? 'true' : null" />
+      </div>
+      @if (error('birthDate')) { <p class="error">{{ error('birthDate') }}</p> }
+    </div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <div class="control" [class.invalid]="error('email')">
+        <input id="email" type="email" formControlName="email" autocomplete="email"
+               placeholder="name@example.com"
+               [attr.aria-invalid]="error('email') ? 'true' : null" />
+      </div>
+      @if (error('email')) { <p class="error">{{ error('email') }}</p> }
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="control" [class.invalid]="error('password')">
+        <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
+               autocomplete="new-password"
+               [attr.aria-invalid]="error('password') ? 'true' : null" />
+        <button type="button" class="toggle" (click)="showPassword.set(!showPassword())"
+                [attr.aria-pressed]="showPassword()">
+          {{ showPassword() ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      @if (error('password')) { <p class="error">{{ error('password') }}</p> }
+      @else { <p class="hint">At least {{ limits.passwordMin }} characters, with a letter and a digit.</p> }
+    </div>
+
+    <div class="field">
+      <label for="confirmPassword">Confirm password</label>
+      <div class="control" [class.invalid]="error('confirmPassword')">
+        <input id="confirmPassword" [type]="showPassword() ? 'text' : 'password'"
+               formControlName="confirmPassword" autocomplete="new-password"
+               [attr.aria-invalid]="error('confirmPassword') ? 'true' : null" />
+      </div>
+      @if (error('confirmPassword')) { <p class="error">{{ error('confirmPassword') }}</p> }
+    </div>
+
+    <button type="submit" class="submit" [disabled]="submitting()">
+      {{ submitting() ? 'Creating account…' : 'Create account' }}
+    </button>
+  </form>
+
+  <p class="switch">Already have an account? <a routerLink="/login">Log in</a></p>
+</section>
