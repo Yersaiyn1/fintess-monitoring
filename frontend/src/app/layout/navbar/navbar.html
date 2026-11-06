@@ -13,8 +13,9 @@
       <app-icon name="bell" [size]="20" />
     </button>
     <div class="user">
-      <span class="avatar" aria-hidden="true">AC</span>
-      <span class="who">Alex Carter</span>
+      <span class="avatar" aria-hidden="true">{{ auth.initials() }}</span>
+      <span class="who">{{ auth.user()?.fullName }}</span>
     </div>
+    <button type="button" class="logout" (click)="logout()">Log out</button>
   </div>
 </header>
