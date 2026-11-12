@@ -23,14 +23,18 @@ interface MetricOption {
 export class Dashboard {
   private readonly data = inject(DashboardDataService);
 
-  protected readonly loading = this.data.loading;
-  protected readonly error = this.data.error;
   protected readonly today = this.data.today;
   protected readonly goal = this.data.dailyStepGoal;
   protected readonly progress = this.data.stepsProgress;
   protected readonly remaining = this.data.stepsRemaining;
   protected readonly stats = this.data.statCards;
   protected readonly workouts = this.data.recentWorkouts;
+  protected readonly loading = this.data.loading;
+  protected readonly error = this.data.error;
+
+  constructor() {
+    void this.data.load();
+  }
 
   protected readonly metrics: MetricOption[] = [
     { key: 'steps', label: 'Steps', unit: 'steps', decimals: 0 },
@@ -56,6 +60,10 @@ export class Dashboard {
   );
 
   protected readonly goalReached = computed(() => this.remaining() === 0);
+
+  protected retry(): void {
+    void this.data.load();
+  }
 
   protected select(option: MetricOption): void {
     this.metric.set(option);

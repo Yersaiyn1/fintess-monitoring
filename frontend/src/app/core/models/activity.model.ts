@@ -9,7 +9,8 @@ export interface DailyActivity {
   activeMinutes: number;
 }
 
-export type WorkoutKind = 'Run' | 'Cycling' | 'Strength' | 'Yoga' | 'Walk';
+export type { WorkoutKind } from './workout.model';
+import type { WorkoutKind } from './workout.model';
 
 export interface RecentWorkout {
   id: number;

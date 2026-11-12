@@ -9,3 +9,6 @@ build/
 .idea/
 .vscode/
 .DS_Store
+.angular/
+.pytest_cache/
+*.log

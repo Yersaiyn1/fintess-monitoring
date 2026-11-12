@@ -24,6 +24,11 @@
   border-radius: 50%; background: var(--cobalt); color: #fff; font-size: 13px; font-weight: 600;
 }
 .who { font-weight: 500; font-size: 14px; }
+.logout {
+  height: 42px; padding: 0 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; font-weight: 500; font-size: 14px;
+}
+.logout:hover { background: #fff; }
 
 @media (max-width: 900px) {
   .navbar { padding: 16px 18px 4px; }

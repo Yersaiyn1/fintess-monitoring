@@ -10,6 +10,7 @@
   --mint: #19b58a;
   --amber: #f0a52c;
   --coral: #f2584a;
+  --violet: #7b5cd6;
 
   --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Figtree', 'Segoe UI', system-ui, sans-serif;
@@ -53,3 +54,13 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Colour tag of a workout type: used on Dashboard, Activity and History */
+.kind-dot {
+  display: inline-block; flex: none; width: 10px; height: 38px; border-radius: 6px; background: var(--cobalt);
+}
+.kind-dot[data-kind='Run'] { background: var(--coral); }
+.kind-dot[data-kind='Walk'] { background: var(--mint); }
+.kind-dot[data-kind='Cycling'] { background: var(--cobalt); }
+.kind-dot[data-kind='Strength'] { background: var(--amber); }
+.kind-dot[data-kind='Yoga'] { background: var(--violet); }
