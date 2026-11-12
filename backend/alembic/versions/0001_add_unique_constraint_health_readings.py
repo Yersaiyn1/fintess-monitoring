@@ -1,7 +1,7 @@
 """Add UNIQUE INDEX CONCURRENTLY on Health_Readings(device_id, date_time)
 
 Revision ID: 0001
-Revises: 
+Revises: 0000
 Create Date: 2024-01-01 00:00:00.000000
 
 PRODUCTION SAFETY:
@@ -17,7 +17,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '0001'
-down_revision = None
+down_revision = '0000'
 branch_labels = None
 depends_on = None
 

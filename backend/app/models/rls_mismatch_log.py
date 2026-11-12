@@ -4,7 +4,6 @@ The table is created by migration 0012_create_rls_mismatch_log.py.
 """
 from sqlalchemy import Column, Integer, String, Text, DateTime
 from sqlalchemy.sql import func
-from app.db.session import AsyncSessionLocal
 from app.db.base import Base
 
 class RlsMismatchLog(Base):

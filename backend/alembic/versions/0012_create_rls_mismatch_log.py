@@ -16,18 +16,18 @@ depends_on = None
 
 def upgrade() -> None:
     # Table stores mismatches observed when RLS is not enforced.
-    op.create_table(
-        "rls_mismatch_log",
-        sa.Column("log_id", sa.Integer(), primary_key=True, autoincrement=True),
-        sa.Column("timestamp", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("endpoint", sa.String(256), nullable=False),
-        sa.Column("user_id", sa.Integer(), nullable=True),
-        sa.Column("doctor_id", sa.Integer(), nullable=True),
-        sa.Column("rows_mismatched", sa.Integer(), nullable=False),
-        sa.Column("details", sa.Text(), nullable=True),
-    )
-    # Index for fast aggregation by timestamp.
-    op.create_index("ix_rls_mismatch_timestamp", "rls_mismatch_log", ["timestamp"])
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS rls_mismatch_log (
+            log_id          SERIAL PRIMARY KEY,
+            timestamp       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+            endpoint        VARCHAR(256) NOT NULL,
+            user_id         INTEGER,
+            doctor_id       INTEGER,
+            rows_mismatched INTEGER      NOT NULL,
+            details         TEXT
+        )
+    """)
+    op.execute("CREATE INDEX IF NOT EXISTS ix_rls_mismatch_timestamp ON rls_mismatch_log (timestamp)")
 
 
 def downgrade() -> None:

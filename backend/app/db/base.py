@@ -5,5 +5,6 @@ class Base(DeclarativeBase):
     pass
 
 
-# Import all models so Alembic can see them
-from app.models import user, device, health_reading, doctor, doctor_access, access_log  # noqa: F401, E402
+# Importing the package registers EVERY model on Base.metadata (used by Alembic and tests).
+# To add a table: create app/models/<name>.py and add one line to app/models/__init__.py.
+import app.models  # noqa: F401, E402

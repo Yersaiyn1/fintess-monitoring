@@ -1,4 +1,7 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL } from '../config/api.config';
 
 export interface User {
   id: number;
@@ -16,86 +19,115 @@ export interface RegisterData {
 
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
-interface StoredUser extends User {
-  passwordHash: string;
-}
+/** Shapes returned by the FastAPI backend (backend/app/schemas/auth.py). */
+interface ApiUser { user_id: number; full_name: string; email: string; birth_date: string }
+interface TokenResponse { access_token: string; token_type: string; user: ApiUser }
 
-const USERS_KEY = 'pulse.users';
+interface Session { token: string; user: User }
+
 const SESSION_KEY = 'pulse.session';
 
 /**
- * Phase 1: MOCK authentication stored in the browser (localStorage).
- * Later it is replaced by calls to the FastAPI backend (POST /auth/login,
- * POST /auth/register); the public methods below stay the same, so the
- * login and register pages do not change.
+ * Authentication against the FastAPI backend (POST /auth/register, POST /auth/login).
+ * The public API (register, login, logout, user, isLoggedIn, initials) is the same as in the
+ * first mock version, so the login and register pages did not need to change.
+ *
+ * The JWT is kept in localStorage so the session survives a page refresh.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly _user = signal<User | null>(this.loadSession());
+  private readonly http = inject(HttpClient);
+  private readonly base = inject(API_BASE_URL);
 
-  readonly user = this._user.asReadonly();
-  readonly isLoggedIn = computed(() => this._user() !== null);
+  private readonly _session = signal<Session | null>(this.loadSession());
+
+  readonly user = computed(() => this._session()?.user ?? null);
+  readonly token = computed(() => this._session()?.token ?? null);
+  readonly isLoggedIn = computed(() => this._session() !== null);
   readonly initials = computed(() => {
-    const name = this._user()?.fullName.trim() ?? '';
+    const name = this.user()?.fullName.trim() ?? '';
     return name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
   });
 
   async register(data: RegisterData): Promise<AuthResult> {
-    const users = this.loadUsers();
-    const email = data.email.trim().toLowerCase();
-    if (users.some((u) => u.email === email)) {
-      return { ok: false, error: 'An account with this email already exists.' };
-    }
-    const stored: StoredUser = {
-      id: Math.max(0, ...users.map((u) => u.id)) + 1,
-      fullName: data.fullName.trim(),
-      email,
-      birthDate: data.birthDate,
-      passwordHash: await this.hash(data.password),
-    };
-    this.save(USERS_KEY, [...users, stored]);
-    this.startSession(stored);
-    return { ok: true };
+    return this.authenticate('/auth/register', {
+      full_name: data.fullName.trim(),
+      email: data.email.trim().toLowerCase(),
+      birth_date: data.birthDate,
+      password: data.password,
+    }, 'Registration failed. Please try again.');
   }
 
   async login(email: string, password: string): Promise<AuthResult> {
-    const found = this.loadUsers().find((u) => u.email === email.trim().toLowerCase());
-    // Same message for "no user" and "wrong password" (does not reveal which emails exist).
-    if (!found || found.passwordHash !== (await this.hash(password))) {
-      return { ok: false, error: 'Incorrect email or password.' };
-    }
-    this.startSession(found);
-    return { ok: true };
+    return this.authenticate('/auth/login', {
+      email: email.trim().toLowerCase(),
+      password,
+    }, 'Login failed. Please try again.');
   }
 
   logout(): void {
-    this._user.set(null);
+    this._session.set(null);
     try { localStorage.removeItem(SESSION_KEY); } catch { /* storage unavailable */ }
   }
 
-  private startSession(u: StoredUser): void {
-    const user: User = { id: u.id, fullName: u.fullName, email: u.email, birthDate: u.birthDate };
-    this._user.set(user);
-    this.save(SESSION_KEY, user);
-  }
-
-  private async hash(text: string): Promise<string> {
-    const bytes = new TextEncoder().encode(text);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  private loadUsers(): StoredUser[] { return this.load<StoredUser[]>(USERS_KEY) ?? []; }
-  private loadSession(): User | null { return this.load<User>(SESSION_KEY); }
-
-  private load<T>(key: string): T | null {
+  private async authenticate(path: string, body: object, fallbackError: string): Promise<AuthResult> {
     try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T) : null;
-    } catch { return null; }
+      const res = await firstValueFrom(this.http.post<TokenResponse>(`${this.base}${path}`, body));
+      const session: Session = {
+        token: res.access_token,
+        user: {
+          id: res.user.user_id,
+          fullName: res.user.full_name,
+          email: res.user.email,
+          birthDate: res.user.birth_date,
+        },
+      };
+      this._session.set(session);
+      this.save(session);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: this.messageFrom(e, fallbackError) };
+    }
   }
 
-  private save(key: string, value: unknown): void {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage unavailable */ }
+  private messageFrom(e: unknown, fallback: string): string {
+    if (e instanceof HttpErrorResponse) {
+      if (e.status === 0) return 'Cannot reach the server. Make sure the backend is running.';
+      const detail = e.error?.detail;
+      if (typeof detail === 'string') return detail;
+      if (Array.isArray(detail) && detail[0]?.msg) {
+        return String(detail[0].msg).replace(/^Value error,\s*/, '');
+      }
+    }
+    return fallback;
+  }
+
+  /** Restores the session after a page refresh; drops it if the token has expired. */
+  private loadSession(): Session | null {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw) as Partial<Session>;
+      if (typeof s.token !== 'string' || !s.user || this.isExpired(s.token)) {
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      return s as Session;
+    } catch {
+      return null;
+    }
+  }
+
+  private isExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      return typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now();
+    } catch {
+      return true;
+    }
+  }
+
+  private save(session: Session): void {
+    try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch { /* storage unavailable */ }
   }
 }

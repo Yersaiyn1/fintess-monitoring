@@ -1,6 +1,12 @@
 -- =============================================================
--- Fitness Monitoring — Database Schema
+-- Fitness Monitoring — Database Schema (readable snapshot)
 -- PostgreSQL 14+
+--
+-- The SOURCE OF TRUTH is the Alembic migrations (backend/alembic/versions).
+-- This file is the same result in one script, handy for reading and for the ERD.
+-- Equivalent to:  alembic upgrade head   (verified by comparing pg_dump of both).
+-- If you create the database from this file, run `alembic stamp head` afterwards.
+-- Every new migration must also be reflected here (see docs/ADDING_A_PHASE.md).
 -- =============================================================
 
 -- ─────────────────────────────────────────
@@ -11,7 +17,8 @@ CREATE TABLE IF NOT EXISTS "Users" (
     full_name         VARCHAR(255)  NOT NULL,
     birth_date        DATE          NOT NULL,
     email             VARCHAR(255)  NOT NULL UNIQUE,
-    registration_date DATE          NOT NULL DEFAULT CURRENT_DATE
+    registration_date DATE          NOT NULL DEFAULT CURRENT_DATE,
+    password_hash     VARCHAR(255)  -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
 );
 
 -- ─────────────────────────────────────────
@@ -45,10 +52,12 @@ CREATE TABLE IF NOT EXISTS "Health_Readings" (
     heart_rate_bpm INTEGER       CHECK (heart_rate_bpm BETWEEN 30 AND 220),
     steps          INTEGER       CHECK (steps >= 0),
     calories_kcal  NUMERIC(8,2)  CHECK (calories_kcal >= 0),
-    blood_pressure VARCHAR(20),
-    -- Deduplication constraint (Phase 0)
-    CONSTRAINT uq_health_readings_device_datetime UNIQUE (device_id, date_time)
+    blood_pressure VARCHAR(20)
 );
+
+-- Deduplication rule (migration 0001): no duplicate readings after a re-sync
+CREATE UNIQUE INDEX IF NOT EXISTS uq_health_readings_device_datetime
+    ON "Health_Readings" (device_id, date_time);
 
 -- ─────────────────────────────────────────
 -- Doctor_Access  (M:N bridge)
@@ -66,12 +75,15 @@ CREATE TABLE IF NOT EXISTS "Doctor_Access" (
 -- Access_Log  (Phase 0 — audit trail)
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS "Access_Log" (
-    log_id      SERIAL PRIMARY KEY,
-    doctor_id   INTEGER       NOT NULL REFERENCES "Doctors"(doctor_id),
-    user_id     INTEGER       NOT NULL REFERENCES "Users"(user_id),
+    log_id      SERIAL,
+    doctor_id   INTEGER       NOT NULL,
+    user_id     INTEGER       NOT NULL,
     accessed_at TIMESTAMPTZ   NOT NULL DEFAULT now(),
     endpoint    VARCHAR(500)  NOT NULL,
-    result      VARCHAR(50)   NOT NULL  -- 'GRANTED' | 'DENIED'
+    result      VARCHAR(50)   NOT NULL,  -- 'GRANTED' | 'DENIED'
+    CONSTRAINT pk_access_log        PRIMARY KEY (log_id),
+    CONSTRAINT fk_access_log_doctor FOREIGN KEY (doctor_id) REFERENCES "Doctors"(doctor_id),
+    CONSTRAINT fk_access_log_user   FOREIGN KEY (user_id)   REFERENCES "Users"(user_id)
 );
 
 -- ─────────────────────────────────────────
@@ -96,3 +108,16 @@ CREATE INDEX IF NOT EXISTS idx_access_log_doctor_id   ON "Access_Log" (doctor_id
 CREATE INDEX IF NOT EXISTS idx_access_log_user_id     ON "Access_Log" (user_id);
 CREATE INDEX IF NOT EXISTS idx_access_log_accessed_at ON "Access_Log" (accessed_at);
 
+-- ─────────────────────────────────────────
+-- rls_mismatch_log  (migration 0012 — shadow RLS check)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS rls_mismatch_log (
+    log_id          SERIAL PRIMARY KEY,
+    timestamp       TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    endpoint        VARCHAR(256) NOT NULL,
+    user_id         INTEGER,
+    doctor_id       INTEGER,
+    rows_mismatched INTEGER      NOT NULL,
+    details         TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_rls_mismatch_timestamp ON rls_mismatch_log (timestamp);

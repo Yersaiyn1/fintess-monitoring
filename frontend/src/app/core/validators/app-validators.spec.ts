@@ -11,8 +11,9 @@ describe('app validators', () => {
     }
   });
 
-  it('limits email length to 100 characters (like the database)', () => {
-    expect(email('a'.repeat(95) + '@x.com').invalid).toBe(true);
+  it('limits email length to 255 characters (like the database)', () => {
+    expect(email('a'.repeat(250) + '@x.com').invalid).toBe(true);
+    expect(email('a'.repeat(200) + '@x.com').valid).toBe(true);
   });
 
   it('rejects blank text', () => {

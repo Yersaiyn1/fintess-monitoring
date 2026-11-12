@@ -1,22 +1,21 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../../config/api.config';
 import { DashboardResponse } from './dashboard-response.model';
 
-/** Simple typed HTTP client for the dashboard endpoint */
-@Injectable({
-  providedIn: 'root',
-})
+/**
+ * Typed HTTP client for the dashboard endpoint.
+ * Pattern for every feature/phase: one `<feature>-api.service.ts` next to this file
+ * that only talks HTTP; state lives in a separate data service (see DashboardDataService).
+ */
+@Injectable({ providedIn: 'root' })
 export class DashboardApiService {
-  private readonly baseUrl = '/api'; // prefixed in main.ts proxy or same origin
+  private readonly http = inject(HttpClient);
+  private readonly base = inject(API_BASE_URL);
 
-  constructor(private http: HttpClient) {}
-
-  /** GET /api/dashboard/{user_id} */
-  getDashboard(userId: number): Observable<DashboardResponse> {
-    return this.http.get<DashboardResponse>(
-      `${this.baseUrl}/dashboard/${userId}`
-    );
+  /** GET /api/v1/dashboard — activity of the logged-in user (taken from the token) */
+  getDashboard(): Observable<DashboardResponse> {
+    return this.http.get<DashboardResponse>(`${this.base}/dashboard`);
   }
 }
-

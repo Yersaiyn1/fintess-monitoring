@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date as date_type
 from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class DailyActivity(BaseModel):
     """DTO matching the frontend `DailyActivity` interface."""
-    date: date = Field(..., description="ISO date (yyyy-mm-dd)")
+    date: date_type = Field(..., description="ISO date (yyyy-mm-dd)")
     label: str = Field(..., description='Short weekday label, e.g. "Mon"')
     steps: int = Field(..., ge=0, description="Step count for the day")
     calories: float = Field(..., ge=0, description="Calories burned")

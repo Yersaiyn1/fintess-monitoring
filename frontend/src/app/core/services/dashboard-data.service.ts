@@ -1,26 +1,44 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
 import { DailyActivity, RecentWorkout } from '../models/activity.model';
 import { StatCardData } from '../models/stat.model';
+import { DashboardApiService } from './api/dashboard-api.service';
+import { AuthService } from './auth.service';
+
+const WEEKDAYS = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+
+/** 7 empty days ending today: shown until the real data arrives, so the page never has "no data" holes. */
+function emptyWeek(): DailyActivity[] {
+  const now = new Date();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6 - i));
+    return { date: d.toISOString().slice(0, 10), label: WEEKDAYS.format(d), steps: 0, calories: 0, distanceKm: 0, activeMinutes: 0 };
+  });
+}
 
 /**
- * Phase 1: supplies MOCK data for the Dashboard.
- * Later phases replace the mock source with real tracked activity,
- * while the public signals below stay the same, so components do not change.
+ * State of the Dashboard page. Data comes from the backend (GET /api/v1/dashboard).
+ * Components read the signals below and never talk HTTP themselves.
  */
 @Injectable({ providedIn: 'root' })
 export class DashboardDataService {
+  private readonly api = inject(DashboardApiService);
+  private readonly auth = inject(AuthService);
+  private loadedForUser: number | null = null;
+
   /** Daily step goal (becomes user-editable in Phase 4). */
   readonly dailyStepGoal = signal(10_000);
 
   /** Last 7 days, oldest first; the last item is "today". */
-  readonly week = signal<DailyActivity[]>(this.buildMockWeek());
+  readonly week = signal<DailyActivity[]>(emptyWeek());
 
-  readonly recentWorkouts = signal<RecentWorkout[]>([
-    { id: 1, kind: 'Run', durationMin: 32, calories: 318, when: 'Today, 07:30' },
-    { id: 2, kind: 'Strength', durationMin: 45, calories: 264, when: 'Yesterday, 18:10' },
-    { id: 3, kind: 'Cycling', durationMin: 58, calories: 402, when: 'Tue, 17:45' },
-    { id: 4, kind: 'Yoga', durationMin: 30, calories: 96, when: 'Mon, 08:00' },
-  ]);
+  /** Filled by Phase 2 (workout tracking). Empty until then: no fake data next to real data. */
+  readonly recentWorkouts = signal<RecentWorkout[]>([]);
+
+  readonly loading = signal(false);
+  readonly error = signal('');
 
   readonly today = computed(() => this.week()[this.week().length - 1]);
   private readonly yesterday = computed(() => this.week()[this.week().length - 2]);
@@ -47,27 +65,35 @@ export class DashboardDataService {
     ];
   });
 
-  private delta(now: number, before: number): number {
-    return before === 0 ? 0 : Math.round(((now - before) / before) * 100);
+  /** Loads the last 7 days from the backend. Safe to call again (e.g. "Retry"). */
+  async load(): Promise<void> {
+    const userId = this.auth.user()?.id ?? null;
+    if (userId !== this.loadedForUser) {
+      // A different user logged in: never show the previous user's numbers.
+      this.week.set(emptyWeek());
+      this.recentWorkouts.set([]);
+      this.loadedForUser = userId;
+    }
+    this.loading.set(true);
+    this.error.set('');
+    try {
+      const res = await firstValueFrom(this.api.getDashboard());
+      if (res.week.length > 0) this.week.set(res.week);
+    } catch (e) {
+      this.error.set(this.messageFrom(e));
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  private buildMockWeek(): DailyActivity[] {
-    const steps = [8420, 11260, 6930, 9810, 12480, 5390, 7482];
-    const minutes = [41, 63, 34, 52, 71, 26, 48];
-    const labels = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
-    const now = new Date();
+  private messageFrom(e: unknown): string {
+    if (e instanceof HttpErrorResponse && e.status === 0) {
+      return 'Cannot reach the server. Make sure the backend is running.';
+    }
+    return 'Could not load your activity. Please try again.';
+  }
 
-    return steps.map((s, i) => {
-      const d = new Date(now);
-      d.setDate(now.getDate() - (steps.length - 1 - i));
-      return {
-        date: d.toISOString().slice(0, 10),
-        label: labels.format(d),
-        steps: s,
-        calories: Math.round(s * 0.055),
-        distanceKm: Math.round(s * 0.00075 * 10) / 10,
-        activeMinutes: minutes[i],
-      };
-    });
+  private delta(now: number, before: number): number {
+    return before === 0 ? 0 : Math.round(((now - before) / before) * 100);
   }
 }

@@ -1,4 +1,13 @@
-<div class="grid">
+@if (error()) {
+  <div class="notice error" role="alert">
+    <span>{{ error() }}</span>
+    <button type="button" (click)="retry()">Retry</button>
+  </div>
+} @else if (loading()) {
+  <div class="notice" role="status">Loading your activity…</div>
+}
+
+<div class="grid" [attr.aria-busy]="loading()">
   <!-- Today's goal -->
   <section class="hero" aria-labelledby="goal-title">
     <h2 id="goal-title" class="sr-only">Daily step goal</h2>
@@ -57,6 +66,8 @@
             <span class="muted">{{ w.calories }} kcal</span>
           </div>
         </li>
+      } @empty {
+        <li class="empty muted">No workouts recorded yet.</li>
       }
     </ul>
   </section>

@@ -15,3 +15,5 @@ class User(Base):
     registration_date: Mapped[object] = mapped_column(
         Date, server_default=func.current_date(), nullable=True
     )
+    # bcrypt hash (see app/core/security.py). NULL = account without a password (cannot log in).
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)

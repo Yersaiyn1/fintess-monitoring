@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Login } from './login';
@@ -5,7 +7,7 @@ import { Login } from './login';
 describe('Login page', () => {
   beforeEach(async () => {
     localStorage.clear();
-    await TestBed.configureTestingModule({ imports: [Login], providers: [provideRouter([])] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [Login], providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()] }).compileComponents();
   });
 
   function setup() {

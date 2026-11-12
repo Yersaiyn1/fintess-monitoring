@@ -2,13 +2,13 @@ import { AbstractControl, ValidationErrors, ValidatorFn, Validators } from '@ang
 
 /**
  * Validation rules that mirror the database (database/schema.sql):
- *  Users.full_name  VARCHAR(100) NOT NULL
- *  Users.email      VARCHAR(100) NOT NULL UNIQUE
+ *  Users.full_name  VARCHAR(255) NOT NULL
+ *  Users.email      VARCHAR(255) NOT NULL UNIQUE
  *  Users.birth_date DATE NOT NULL, not in the future
  */
 export const LIMITS = {
-  fullNameMax: 100,
-  emailMax: 100,
+  fullNameMax: 255,
+  emailMax: 255,
   passwordMin: 8,
   passwordMax: 64,
   minBirthYear: 1900,

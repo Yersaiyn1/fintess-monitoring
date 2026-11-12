@@ -24,6 +24,10 @@ class ContextSetterMiddleware(BaseHTTPMiddleware):
         # Extract IDs from custom headers (adjust as your auth mechanism).
         user_id = request.headers.get("x-user-id")
         doctor_id = request.headers.get("x-doctor-id")
+        if not user_id and not doctor_id:
+            # Normal browser requests (JWT auth) carry no context headers:
+            # do not open a database connection for them.
+            return await call_next(request)
         # Set context variables if PostgreSQL session is active
         try:
             async with AsyncSessionLocal() as session:

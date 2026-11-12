@@ -1,0 +1,3 @@
+# Only for the one-off maintenance script scripts/deduplicate_health_readings.py
+# (not needed to run the API):  pip install -r requirements-scripts.txt
+psycopg2-binary>=2.9.11

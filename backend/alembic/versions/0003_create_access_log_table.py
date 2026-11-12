@@ -24,28 +24,23 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        'Access_Log',
-        sa.Column('log_id', sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column('doctor_id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column(
-            'accessed_at',
-            sa.DateTime(timezone=True),
-            server_default=sa.text('now()'),
-            nullable=False,
-        ),
-        sa.Column('endpoint', sa.String(500), nullable=False),
-        sa.Column('result', sa.String(50), nullable=False),
-        sa.ForeignKeyConstraint(['doctor_id'], ['Doctors.doctor_id'], name='fk_access_log_doctor'),
-        sa.ForeignKeyConstraint(['user_id'], ['Users.user_id'], name='fk_access_log_user'),
-        sa.PrimaryKeyConstraint('log_id', name='pk_access_log'),
-    )
-    
-    # Create indexes on the new table (normal CREATE INDEX, no CONCURRENTLY needed for new table)
-    op.create_index('idx_access_log_doctor_id', 'Access_Log', ['doctor_id'])
-    op.create_index('idx_access_log_user_id', 'Access_Log', ['user_id'])
-    op.create_index('idx_access_log_accessed_at', 'Access_Log', ['accessed_at'])
+    # IF NOT EXISTS: the table may already exist when the database was created from database/schema.sql.
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS "Access_Log" (
+            log_id      SERIAL,
+            doctor_id   INTEGER      NOT NULL,
+            user_id     INTEGER      NOT NULL,
+            accessed_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+            endpoint    VARCHAR(500) NOT NULL,
+            result      VARCHAR(50)  NOT NULL,
+            CONSTRAINT pk_access_log PRIMARY KEY (log_id),
+            CONSTRAINT fk_access_log_doctor FOREIGN KEY (doctor_id) REFERENCES "Doctors"(doctor_id),
+            CONSTRAINT fk_access_log_user   FOREIGN KEY (user_id)   REFERENCES "Users"(user_id)
+        )
+    """)
+    op.execute('CREATE INDEX IF NOT EXISTS idx_access_log_doctor_id   ON "Access_Log" (doctor_id)')
+    op.execute('CREATE INDEX IF NOT EXISTS idx_access_log_user_id     ON "Access_Log" (user_id)')
+    op.execute('CREATE INDEX IF NOT EXISTS idx_access_log_accessed_at ON "Access_Log" (accessed_at)')
 
 
 def downgrade() -> None:
