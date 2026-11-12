@@ -5,7 +5,7 @@ and add ONE line below.
 """
 from fastapi import APIRouter
 
-from app.api.v1 import auth, dashboard, doctor, sync
+from app.api.v1 import analytics, auth, dashboard, doctor, sync, workouts
 
 api_router = APIRouter()
 
@@ -15,6 +15,9 @@ api_router.include_router(dashboard.router, tags=["dashboard"])
 api_router.include_router(sync.router, prefix="/sync", tags=["sync"])
 api_router.include_router(doctor.router, prefix="/doctor", tags=["doctor"])
 
-# Phase 2 — Activity Tracking:     api_router.include_router(workouts.router, prefix="/workouts", tags=["workouts"])
-# Phase 3 — History & Analytics:   api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+# Phase 2 — Activity Tracking
+api_router.include_router(workouts.router, prefix="/workouts", tags=["workouts"])  # Phase 3 adds list/details here
+# Phase 3 — History & Analytics
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+
 # Phase 4 — Goals & Settings:      goals.router (/goals), settings.router (/settings)

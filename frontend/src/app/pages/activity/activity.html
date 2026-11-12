@@ -1,0 +1,68 @@
+<div class="layout">
+  <!-- Workout control -->
+  <section class="tracker" [class.running]="tracker.isRunning()" aria-labelledby="tracker-title">
+    <h2 id="tracker-title" class="label">{{ tracker.isRunning() ? 'Workout in progress' : 'Start a workout' }}</h2>
+
+    <div class="kinds" role="radiogroup" aria-label="Activity type">
+      @for (t of tracker.types(); track t.kind) {
+        <button type="button" role="radio" class="kind"
+                [attr.aria-checked]="tracker.selectedKind() === t.kind"
+                [class.on]="tracker.selectedKind() === t.kind"
+                [disabled]="tracker.isRunning()"
+                (click)="tracker.select(t.kind)">
+          <span class="kind-dot" [attr.data-kind]="t.kind"></span>{{ t.label }}
+        </button>
+      }
+    </div>
+
+    <p class="clock" role="timer" [attr.aria-label]="'Elapsed time ' + clock()">{{ clock() }}</p>
+
+    <dl class="live" [attr.aria-label]="tracker.isRunning() ? 'Estimated results so far' : 'Results'">
+      <div><dt>Steps</dt><dd>{{ tracker.live().steps | number }}</dd></div>
+      <div><dt>Distance</dt><dd>{{ tracker.live().km | number: '1.2-2' }} <small>km</small></dd></div>
+      <div><dt>Calories</dt><dd>{{ tracker.live().kcal | number: '1.0-0' }} <small>kcal</small></dd></div>
+    </dl>
+    @if (tracker.isRunning()) {
+      <p class="hint">Estimates while you train. The final numbers are saved when you stop.</p>
+    }
+
+    @if (tracker.isRunning()) {
+      <button type="button" class="action stop" [disabled]="tracker.busy()" (click)="tracker.stop()">Stop workout</button>
+    } @else {
+      <button type="button" class="action start" [disabled]="tracker.busy() || !tracker.ready()" (click)="tracker.start()">Start workout</button>
+    }
+
+    @if (tracker.error()) {
+      <p class="error" role="alert">{{ tracker.error() }}</p>
+    }
+  </section>
+
+  <!-- Today's statistics -->
+  <section class="stats" aria-label="Today's activity">
+    @for (c of cards(); track c.id) {
+      <app-stat-card [data]="c" />
+    }
+  </section>
+
+  <!-- Result of the last workout + latest workouts -->
+  <section class="panel" aria-labelledby="latest-title">
+    @if (tracker.lastResult(); as r) {
+      <div class="saved" role="status">
+        <strong>{{ r.kind }} saved.</strong>
+        {{ formatDuration(r.durationSec) }} · {{ r.steps | number }} steps · {{ r.distanceKm | number: '1.2-2' }} km · {{ r.caloriesKcal | number: '1.0-0' }} kcal
+      </div>
+    }
+    <h2 id="latest-title">Latest workouts</h2>
+    <ul>
+      @for (w of recent(); track w.id) {
+        <li>
+          <span class="kind-dot" [attr.data-kind]="w.kind"></span>
+          <div class="info"><strong>{{ w.kind }}</strong><span class="muted">{{ w.when }}</span></div>
+          <div class="nums"><strong>{{ w.durationMin }} min</strong><span class="muted">{{ w.calories }} kcal</span></div>
+        </li>
+      } @empty {
+        <li class="empty muted">No workouts yet. Pick an activity and press Start.</li>
+      }
+    </ul>
+  </section>
+</div>

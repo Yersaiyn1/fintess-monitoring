@@ -65,13 +65,24 @@ Rules that keep this tidy:
 
 | Phase | Database | Backend (`/api/v1/...`) | Frontend |
 |-------|----------|-------------------------|----------|
-| 1 — Foundation (**done**) | `Users.password_hash` (0015) | `auth/register`, `auth/login`, `auth/me`, `dashboard` | login, register, dashboard (live data) |
-| 2 — Activity Tracking | `Workouts` (user, kind, started_at, ended_at, steps, calories, distance) | `workouts/start`, `workouts/{id}/stop`, `workouts/today` | Activity page, timer; dashboard cards from real workouts |
-| 3 — History & Analytics | index on `Workouts(user_id, started_at)`; usually no new tables | `workouts` list with date/type filters, `analytics/weekly`, `analytics/monthly` | History page, charts |
-| 4 — Goals, Progress, Notifications, Settings | `Goals`, `User_Settings` | `goals` CRUD, `settings`, `notifications/inactivity` (7-day rule) | Goals, Profile & Settings |
+| 1 — Foundation (**done**) | `Users.password_hash` (migration 0015) | `auth/register`, `auth/login`, `auth/me`, `dashboard` | login, register, dashboard (live data) |
+| 2 — Activity Tracking (**done**) | `Workouts` table + "one running workout per user" index (0016) | `workouts/types`, `workouts/active`, `workouts/start`, `workouts/{id}/stop` | Activity page: type picker, timer, Start/Stop, today's stats; dashboard includes finished workouts |
+| 3 — History & Analytics (**done**) | indexes on `Workouts` for history queries (0017), no new tables | `GET workouts` (filters `from`, `to`, `kind`, paging), `GET workouts/{id}`, `analytics/workouts?period=week\|month` | History page (filters, list), Workout details page, analytics charts |
+| 4 — Goals, Progress, Notifications, Settings | `Goals`, `User_Settings` (next migration: 0018) | `goals` CRUD, `settings`, `notifications/inactivity` (7-day rule) | Goals, Profile & Settings |
 | 5 — QA & Release | none | fixes, API docs review | UI polish, responsive checks, final demo |
 
-> Note: the original task said to keep workout history and settings in the browser's LocalStorage.
-> Now that a database exists, phases 3 and 4 store them in PostgreSQL instead (they survive a
-> browser change and are per-user). If the course requires LocalStorage, keep the API service as the
-> only place that changes — pages and components stay the same.
+Tables for phases 4 and 5 are deliberately NOT created yet: they are added together with the phase that
+uses them (follow the checklist above), so the schema never contains guesses.
+
+## Design notes for phases 2-3
+* **Workout results are estimates.** When a workout is stopped, the backend calculates steps / distance /
+  calories from the duration with per-minute rates (`ACTIVITY_TYPES` in `backend/app/services/workouts.py`).
+  The same rates are sent to the frontend (`GET /workouts/types`) for the live numbers on the Activity page.
+  Real band data can replace this later without changing the API.
+* **Dashboard day = band readings + finished workouts.** Workouts are added on top of the readings synced from
+  the band (they are separate sources in this project).
+* **The timer lives in the database.** `startedAt` is set by the server; the page only shows `now - startedAt`,
+  so the timer survives a refresh, a closed tab and logging in from another browser.
+* **Days are UTC** (dashboard, history filters, analytics). A workout at 02:00 local time in UTC+5 belongs to the
+  previous UTC day. Showing days in the user's own time zone would need a time-zone setting (good fit for Phase 4 settings).
+* Workout history is stored in PostgreSQL (not in LocalStorage), so it is per user and survives a browser change.

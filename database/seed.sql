@@ -71,3 +71,36 @@ JOIN "Users"   u  ON u.email = v.email
 JOIN "Doctors" dr ON dr.license_number = v.license_number
 ON CONFLICT (user_id, doctor_id) DO UPDATE
     SET access_start = EXCLUDED.access_start, access_end = EXCLUDED.access_end;
+
+-- Workouts (Phase 2/3): demo history for the last ~3 weeks. Inserted only for users that have none yet,
+-- so re-running never duplicates them. Durations / results use the same rates as the backend
+-- (backend/app/services/workouts.py: ACTIVITY_TYPES).
+INSERT INTO "Workouts" (user_id, kind, started_at, ended_at, steps, distance_km, calories_kcal)
+SELECT u.user_id, v.kind,
+       ((date_trunc('day', now() AT TIME ZONE 'UTC') - v.days_ago * INTERVAL '1 day' + v.hr * INTERVAL '1 hour') AT TIME ZONE 'UTC'),
+       ((date_trunc('day', now() AT TIME ZONE 'UTC') - v.days_ago * INTERVAL '1 day' + v.hr * INTERVAL '1 hour' + v.minutes * INTERVAL '1 minute') AT TIME ZONE 'UTC'),
+       ROUND(v.steps_per_min * v.minutes),
+       ROUND((v.km_per_min * v.minutes)::numeric, 2),
+       ROUND((v.kcal_per_min * v.minutes)::numeric, 1)
+FROM (VALUES
+    -- email,               kind,       days_ago, hr, minutes, steps/min, km/min, kcal/min
+    ('alice@example.com', 'Run',       1,  7, 32, 160, 0.16, 11.0),
+    ('alice@example.com', 'Strength',  2, 18, 45,   0, 0,     6.0),
+    ('alice@example.com', 'Cycling',   3, 17, 58,   0, 0.33,  8.0),
+    ('alice@example.com', 'Yoga',      4,  8, 30,   0, 0,     3.0),
+    ('alice@example.com', 'Walk',      6, 19, 40, 105, 0.075, 4.5),
+    ('alice@example.com', 'Run',       8,  7, 28, 160, 0.16, 11.0),
+    ('alice@example.com', 'Cycling',  10, 17, 75,   0, 0.33,  8.0),
+    ('alice@example.com', 'Run',      13,  7, 35, 160, 0.16, 11.0),
+    ('alice@example.com', 'Strength', 15, 18, 50,   0, 0,     6.0),
+    ('alice@example.com', 'Walk',     18, 19, 45, 105, 0.075, 4.5),
+    ('alice@example.com', 'Yoga',     21,  8, 30,   0, 0,     3.0),
+    ('bob@example.com',   'Run',       1,  6, 40, 160, 0.16, 11.0),
+    ('bob@example.com',   'Cycling',   4, 17, 90,   0, 0.33,  8.0),
+    ('bob@example.com',   'Walk',      7, 19, 30, 105, 0.075, 4.5),
+    ('carol@example.com', 'Yoga',      2,  8, 60,   0, 0,     3.0),
+    ('carol@example.com', 'Walk',      5, 18, 50, 105, 0.075, 4.5)
+) AS v(email, kind, days_ago, hr, minutes, steps_per_min, km_per_min, kcal_per_min)
+JOIN "Users" u ON u.email = v.email
+WHERE NOT EXISTS (SELECT 1 FROM "Workouts" w WHERE w.user_id = u.user_id);
+

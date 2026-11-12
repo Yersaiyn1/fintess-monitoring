@@ -121,3 +121,28 @@ CREATE TABLE IF NOT EXISTS rls_mismatch_log (
     details         TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_rls_mismatch_timestamp ON rls_mismatch_log (timestamp);
+
+-- ─────────────────────────────────────────
+-- Workouts  (Phase 2 — migration 0016; indexes: Phase 3 — migration 0017)
+-- A workout is started (ended_at IS NULL) and later stopped.
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Workouts" (
+    workout_id    SERIAL PRIMARY KEY,
+    user_id       INTEGER      NOT NULL REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    kind          VARCHAR(20)  NOT NULL,
+    started_at    TIMESTAMPTZ  NOT NULL,
+    ended_at      TIMESTAMPTZ,
+    steps         INTEGER      NOT NULL DEFAULT 0,
+    distance_km   NUMERIC(7,2) NOT NULL DEFAULT 0,
+    calories_kcal NUMERIC(8,2) NOT NULL DEFAULT 0,
+    CONSTRAINT ck_workouts_kind CHECK (kind IN ('Run','Walk','Cycling','Strength','Yoga')),
+    CONSTRAINT ck_workouts_end_after_start CHECK (ended_at IS NULL OR ended_at >= started_at),
+    CONSTRAINT ck_workouts_steps CHECK (steps >= 0),
+    CONSTRAINT ck_workouts_distance CHECK (distance_km >= 0),
+    CONSTRAINT ck_workouts_calories CHECK (calories_kcal >= 0)
+);
+-- only ONE workout in progress per user
+CREATE UNIQUE INDEX IF NOT EXISTS uq_workouts_one_active_per_user ON "Workouts" (user_id) WHERE ended_at IS NULL;
+-- history / analytics queries (user + date range, optionally kind)
+CREATE INDEX IF NOT EXISTS idx_workouts_user_started      ON "Workouts" (user_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_workouts_user_kind_started ON "Workouts" (user_id, kind, started_at DESC);

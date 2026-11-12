@@ -31,14 +31,17 @@ export const routes: Routes = [
       {
         path: 'activity',
         title: 'Activity',
-        loadComponent: placeholder,
-        data: { heading: 'Activity tracking', text: 'Start and stop workouts, follow the timer and see steps, calories and distance update live.', phase: 2 },
+        loadComponent: () => import('./pages/activity/activity').then((m) => m.Activity),
       },
       {
         path: 'history',
         title: 'History',
-        loadComponent: placeholder,
-        data: { heading: 'Workout history', text: 'Browse saved workouts, filter them by date and type, and review weekly and monthly analytics.', phase: 3 },
+        loadComponent: () => import('./pages/history/history').then((m) => m.History),
+      },
+      {
+        path: 'history/:id',
+        title: 'Workout details',
+        loadComponent: () => import('./pages/workout-details/workout-details').then((m) => m.WorkoutDetails),
       },
       {
         path: 'goals',
