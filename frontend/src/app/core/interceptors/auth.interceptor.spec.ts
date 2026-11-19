@@ -37,6 +37,17 @@ describe('authInterceptor', () => {
     expect(ctrl.expectOne('https://other.example.com/data').request.headers.has('Authorization')).toBe(false);
   });
 
+  it('adds Bearer token to FormData uploads without overriding Content-Type', () => {
+    setup(true);
+    const body = new FormData();
+    body.append('file', new Blob(['zip'], { type: 'application/zip' }), 'export.zip');
+
+    http.post('/api/v1/sync/upload-hc', body).subscribe();
+    const req = ctrl.expectOne('/api/v1/sync/upload-hc').request;
+    expect(req.headers.get('Authorization')).toMatch(/^Bearer x\./);
+    expect(req.headers.has('Content-Type')).toBe(false);
+  });
+
   it('logs the user out and goes to /login when the API answers 401', () => {
     setup(true);
     const auth = TestBed.inject(AuthService);

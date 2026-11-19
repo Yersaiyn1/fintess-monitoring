@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -14,3 +14,11 @@ class SyncBatchResponse(BaseModel):
     device_id: int
     synced_count: int
     skipped_count: int
+
+
+class HealthConnectUploadResponse(BaseModel):
+    filename: str
+    total_parsed: int
+    inserted: int
+    duplicates_skipped: int
+    metrics_breakdown: Dict[str, int]
