@@ -11,7 +11,7 @@
 
   <nav aria-label="Main navigation">
     @for (item of items; track item.path) {
-      <a class="link" [routerLink]="item.path" routerLinkActive="active" (click)="navigated.emit()">
+      <a class="link" [routerLink]="item.path" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="navigated.emit()">
         <app-icon [name]="item.icon" [size]="20" />
         <span>{{ item.label }}</span>
       </a>

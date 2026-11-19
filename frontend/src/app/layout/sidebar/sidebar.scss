@@ -28,3 +28,18 @@ nav { display: grid; gap: 4px; }
 @media (max-width: 900px) {
   .close { display: inline-flex; }
 }
+
+@media (max-width: 600px) {
+  .sidebar { padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); }
+  .brand, .foot { display: none; }
+  nav { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
+
+  .link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 4px 0;
+    font-size: 11px;
+  }
+}

@@ -54,6 +54,9 @@
 .labels .today { color: var(--ink); font-weight: 600; }
 
 @media (max-width: 560px) {
+  .chart { --axis-w: 36px; }
   .bars, .labels { gap: 6px; }
+  .labels { font-size: 11px; }
+  .tick { right: calc(100% + 6px); font-size: 10px; }
   .plot { height: 200px; }
 }

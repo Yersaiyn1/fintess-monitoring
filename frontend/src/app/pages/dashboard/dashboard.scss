@@ -73,8 +73,11 @@ li {
   ul { grid-template-columns: 1fr; }
   .panel { padding: 18px; }
 }
-@media (max-width: 380px) {
-  .stats { grid-template-columns: 1fr; }
+@media (max-width: 600px) {
+  .grid, .stats { grid-template-columns: minmax(0, 1fr); }
+  .panel, .hero { padding: 16px; }
+  .panel-head { gap: 10px; margin-bottom: 20px; }
+  .segmented button { min-height: 44px; }
 }
 
 .notice {

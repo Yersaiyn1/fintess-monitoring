@@ -268,3 +268,11 @@ li {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 600px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .tracker, .panel { padding: 16px; }
+  .live { column-gap: 8px; }
+  .kind, .sync .action { min-height: 44px; }
+  .sync input, .sync select { width: 100%; min-height: 44px; font-size: 16px; }
+}
