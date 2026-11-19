@@ -21,6 +21,7 @@ import asyncpg  # noqa: E402
 from sqlalchemy.engine import make_url  # noqa: E402
 
 from app.core.config import settings  # noqa: E402
+from scripts.configure_db_roles import configure_runtime_role  # noqa: E402
 
 
 def fail(message: str) -> None:
@@ -86,13 +87,19 @@ def main() -> None:
     parser.add_argument("--seed", action="store_true", help="also load demo data from database/seed.sql")
     args = parser.parse_args()
 
-    url = make_url(settings.DATABASE_URL)
+    admin_url_str = settings.migration_database_url
+    url = make_url(admin_url_str)
     if not url.drivername.startswith("postgresql"):
-        fail("DATABASE_URL must start with postgresql+asyncpg://")
+        fail("DATABASE_URL / DATABASE_MIGRATION_URL must start with postgresql+asyncpg://")
     print(f"Using {url.render_as_string(hide_password=True)}")
 
     asyncio.run(ensure_database(url))
     migrate()
+    if settings.APP_DB_PASSWORD:
+        print(f"Configuring least-privilege runtime role '{settings.APP_DB_USER}' ...")
+        asyncio.run(
+            configure_runtime_role(admin_url_str, settings.APP_DB_USER, settings.APP_DB_PASSWORD)
+        )
     if args.seed:
         asyncio.run(seed(url))
     print("\nDone. Start the API:  uvicorn app.main:app --reload --port 8000")

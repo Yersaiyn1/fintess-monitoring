@@ -17,12 +17,14 @@ INSERT INTO "Users" (full_name, birth_date, email, registration_date, password_h
 ON CONFLICT (email) DO UPDATE
     SET password_hash = COALESCE("Users".password_hash, EXCLUDED.password_hash);
 
--- Doctors
-INSERT INTO "Doctors" (full_name, specialty, license_number) VALUES
-    ('Dr. Elena Petrova', 'Cardiology',       'LIC-KZ-001'),
-    ('Dr. James Chen',    'General Practice', 'LIC-KZ-002'),
-    ('Dr. Sara Nkosi',    'Endocrinology',    'LIC-KZ-003')
-ON CONFLICT (license_number) DO NOTHING;
+-- Doctors (demo password for all of them: Demo1234 — DEV ONLY)
+INSERT INTO "Doctors" (full_name, specialty, license_number, email, password_hash, is_active) VALUES
+    ('Dr. Elena Petrova', 'Cardiology',       'LIC-KZ-001', 'elena.petrova@example.com', '$2b$12$hqCroSD6w9rabWyeQTqgpOv0ysQpLRUvUYtj5a1YkKRk66eAAVx82', TRUE),
+    ('Dr. James Chen',    'General Practice', 'LIC-KZ-002', 'james.chen@example.com',    '$2b$12$hqCroSD6w9rabWyeQTqgpOv0ysQpLRUvUYtj5a1YkKRk66eAAVx82', TRUE),
+    ('Dr. Sara Nkosi',    'Endocrinology',    'LIC-KZ-003', 'sara.nkosi@example.com',    '$2b$12$hqCroSD6w9rabWyeQTqgpOv0ysQpLRUvUYtj5a1YkKRk66eAAVx82', TRUE)
+ON CONFLICT (license_number) DO UPDATE
+    SET email = COALESCE("Doctors".email, EXCLUDED.email),
+        password_hash = COALESCE("Doctors".password_hash, EXCLUDED.password_hash);
 
 -- Devices (found by serial number, so re-running does not create copies)
 INSERT INTO "Devices" (user_id, model, serial_number)
@@ -103,4 +105,16 @@ FROM (VALUES
 ) AS v(email, kind, days_ago, hr, minutes, steps_per_min, km_per_min, kcal_per_min)
 JOIN "Users" u ON u.email = v.email
 WHERE NOT EXISTS (SELECT 1 FROM "Workouts" w WHERE w.user_id = u.user_id);
+
+-- Goals (Phase 4): demo daily & weekly goals for Alice and Bob
+INSERT INTO "Goals" (user_id, period, metric, target_value)
+SELECT u.user_id, v.period, v.metric, v.target_value
+FROM (VALUES
+    ('alice@example.com', 'daily',  'steps',          8000),
+    ('alice@example.com', 'daily',  'calories_kcal',   400),
+    ('alice@example.com', 'weekly', 'workouts',          4),
+    ('bob@example.com',   'daily',  'steps',         10000)
+) AS v(email, period, metric, target_value)
+JOIN "Users" u ON u.email = v.email
+ON CONFLICT (user_id, period, metric) DO NOTHING;
 

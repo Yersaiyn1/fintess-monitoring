@@ -68,8 +68,8 @@ Rules that keep this tidy:
 | 1 — Foundation (**done**) | `Users.password_hash` (migration 0015) | `auth/register`, `auth/login`, `auth/me`, `dashboard` | login, register, dashboard (live data) |
 | 2 — Activity Tracking (**done**) | `Workouts` table + "one running workout per user" index (0016) | `workouts/types`, `workouts/active`, `workouts/start`, `workouts/{id}/stop` | Activity page: type picker, timer, Start/Stop, today's stats; dashboard includes finished workouts |
 | 3 — History & Analytics (**done**) | indexes on `Workouts` for history queries (0017), no new tables | `GET workouts` (filters `from`, `to`, `kind`, paging), `GET workouts/{id}`, `analytics/workouts?period=week\|month` | History page (filters, list), Workout details page, analytics charts |
-| 4 — Goals, Progress, Notifications, Settings | `Goals`, `User_Settings` (next migration: 0018) | `goals` CRUD, `settings`, `notifications/inactivity` (7-day rule) | Goals, Profile & Settings |
-| 5 — QA & Release | none | fixes, API docs review | UI polish, responsive checks, final demo |
+| 4 — Goals, Progress, Notifications, Settings (**done**) | `Goals` table + `Devices.serial_number` unique index (0023) | `GET/POST/DELETE /goals` (progress + 7-day inactivity & >100 bpm HR alerts), `/doctor/access` & `/doctor/directory` | Goals & Alerts page (`/goals`), Settings & Doctor Access page (`/settings`) |
+| 5 — QA & Release (**done**) | none | Stage 1 & 2 security hardening, CI, Docker Compose | Vitest suite & production build verified |
 
 Tables for phases 4 and 5 are deliberately NOT created yet: they are added together with the phase that
 uses them (follow the checklist above), so the schema never contains guesses.

@@ -4,9 +4,17 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient, ASGITransport
 
+from app.core.rate_limit import reset_rate_limiter
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def _clear_rate_limits():
+    reset_rate_limiter()
+    yield
+    reset_rate_limiter()
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

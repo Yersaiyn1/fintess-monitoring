@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - database
+      - infrastructure_security_hardening
+  pull_request:
+    branches:
+      - main
+      - database
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Python 3.12 + PostgreSQL 16)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres_admin
+          POSTGRES_PASSWORD: ${{ secrets.CI_PG_ADMIN_PASSWORD || 'ci_admin_test_only_9f8a7b6c5d4e' }}
+          POSTGRES_DB: fitness_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres_admin -d fitness_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      POSTGRES_USER: postgres_admin
+      POSTGRES_PASSWORD: ${{ secrets.CI_PG_ADMIN_PASSWORD || 'ci_admin_test_only_9f8a7b6c5d4e' }}
+      POSTGRES_DB: fitness_test
+      APP_DB_USER: app_user
+      APP_DB_PASSWORD: ${{ secrets.CI_PG_APP_PASSWORD || 'ci_runtime_app_only_3e4d5c6b7a8f' }}
+      SECRET_KEY: ${{ secrets.CI_JWT_SECRET_KEY || 'ci-test-only-jwt-secret-key-at-least-32-characters-long' }}
+      ACCESS_TOKEN_EXPIRE_MINUTES: "60"
+      ENVIRONMENT: development
+      CORS_ORIGINS: http://localhost:4200
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Apply Alembic migrations and configure runtime DB role
+        working-directory: backend
+        env:
+          DATABASE_MIGRATION_URL: postgresql+asyncpg://postgres_admin:${{ env.POSTGRES_PASSWORD }}@localhost:5432/fitness_test
+          DATABASE_URL: postgresql+asyncpg://app_user:${{ env.APP_DB_PASSWORD }}@localhost:5432/fitness_test
+        run: |
+          python -m alembic heads
+          python -m alembic upgrade head
+          python scripts/configure_db_roles.py
+
+      - name: Verify FastAPI startup and health endpoints with runtime role
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://app_user:${{ env.APP_DB_PASSWORD }}@localhost:5432/fitness_test
+        run: |
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/health/db > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8000/health
+          curl -fsS http://127.0.0.1:8000/health/db
+          kill $SERVER_PID
+
+      - name: Run Pytest (unit + security + PostgreSQL integration tests)
+        working-directory: backend
+        env:
+          POSTGRES_INTEGRATION_TEST: "1"
+          DATABASE_MIGRATION_URL: postgresql+asyncpg://postgres_admin:${{ env.POSTGRES_PASSWORD }}@localhost:5432/fitness_test
+          DATABASE_URL: postgresql+asyncpg://app_user:${{ env.APP_DB_PASSWORD }}@localhost:5432/fitness_test
+        run: |
+          python -m pytest -v
+
+  frontend:
+    name: Frontend (Node.js 22 + Angular 21)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Angular unit tests (Vitest)
+        working-directory: frontend
+        run: npx ng test --watch=false
+
+      - name: Run Angular production build
+        working-directory: frontend
+        run: npm run build
