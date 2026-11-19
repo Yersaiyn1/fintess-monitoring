@@ -18,3 +18,18 @@
     border: 0; background: rgba(16, 26, 28, 0.5);
   }
 }
+
+@media (max-width: 600px) {
+  .side, .open .side {
+    inset: auto 0 0;
+    width: auto;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .open .scrim { display: none; }
+
+  .content {
+    padding: 12px 14px calc(84px + env(safe-area-inset-bottom));
+  }
+}

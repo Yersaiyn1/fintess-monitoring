@@ -39,3 +39,16 @@
   .who { display: none; }
   .user { padding-right: 4px; }
 }
+
+@media (max-width: 600px) {
+  .navbar { padding: 12px 14px 4px; gap: 8px; flex-wrap: wrap; }
+  .burger { display: none; }
+  .heading { min-width: 0; }
+  .heading h1 { font-size: 20px; }
+  .heading p { font-size: 12px; }
+  .actions { gap: 6px; }
+  .who { display: none; }
+  .user { padding-right: 4px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .logout { min-height: 44px; padding-inline: 10px; white-space: nowrap; }
+}
