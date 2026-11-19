@@ -22,12 +22,16 @@ if config.config_file_name is not None:
 
 # Import metadata from all models
 from app.db.base import Base  # noqa: E402
-from app.core.config import DATABASE_URL  # noqa: E402
+from app.core.config import settings  # noqa: E402
 
 target_metadata = Base.metadata
 
-# Override sqlalchemy.url from env if set
-database_url = os.environ.get("DATABASE_URL", DATABASE_URL)
+# Prefer DATABASE_MIGRATION_URL (admin/owner role) over DATABASE_URL (runtime role)
+database_url = (
+    os.environ.get("DATABASE_MIGRATION_URL")
+    or os.environ.get("DATABASE_URL")
+    or settings.migration_database_url
+)
 config.set_main_option("sqlalchemy.url", database_url)
 
 

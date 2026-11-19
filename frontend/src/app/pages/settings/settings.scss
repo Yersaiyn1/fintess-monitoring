@@ -1,0 +1,143 @@
+.settings-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.subtitle {
+  color: var(--ink-muted);
+  margin: 0.4rem 0 1.2rem;
+}
+
+.profile-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+
+  dt {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+  }
+  dd {
+    margin: 0.25rem 0 0;
+    font-weight: 600;
+  }
+}
+
+.grant-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.9rem;
+  align-items: end;
+  margin-bottom: 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  select,
+  input {
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    font: inherit;
+    background: #fff;
+  }
+}
+
+.action {
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--cobalt);
+  color: #fff;
+  font-weight: 600;
+}
+
+.status-ok {
+  color: var(--mint);
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.status-err {
+  color: var(--coral);
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+
+.list-title {
+  margin: 1.5rem 0 0.75rem;
+}
+
+.access-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .muted {
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+
+    &.active {
+      background: rgba(25, 181, 138, 0.15);
+      color: #0e7558;
+    }
+
+    &.expired {
+      background: rgba(242, 88, 74, 0.15);
+      color: #b12f23;
+    }
+  }
+
+  .revoke {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--coral);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--coral);
+    font-weight: 600;
+  }
+}

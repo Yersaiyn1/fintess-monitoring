@@ -61,7 +61,9 @@ export class Activity {
       this.selectedDeviceId = device.device_id;
       this.model = '';
       this.serialNumber = '';
-      this.syncMessage = 'Device saved.';
+      this.syncMessage = device.api_key
+        ? `Device saved. API key (copy now): ${device.api_key}`
+        : 'Device saved.';
     } catch {
       this.syncError = 'Could not save the device.';
     }

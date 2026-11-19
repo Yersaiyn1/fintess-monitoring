@@ -7,6 +7,9 @@ export interface DeviceRecord {
   device_id: number;
   model: string;
   serial_number: string;
+  is_active?: boolean;
+  has_key?: boolean;
+  api_key?: string | null;
   last_sync_time: string | null;
 }
 
@@ -24,6 +27,15 @@ export class SyncApiService {
       model,
       serial_number: serialNumber,
     });
+  }
+
+  rotateKey(deviceId: number): Observable<DeviceRecord> {
+    return this.http.post<DeviceRecord>(`${this.url}/devices/${deviceId}/rotate-key`, {});
+  }
+
+  setDeviceActive(deviceId: number, active: boolean): Observable<DeviceRecord> {
+    const action = active ? 'activate' : 'deactivate';
+    return this.http.post<DeviceRecord>(`${this.url}/devices/${deviceId}/${action}`, {});
   }
 
   createReading(body: {

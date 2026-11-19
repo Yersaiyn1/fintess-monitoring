@@ -14,12 +14,8 @@ on a real PostgreSQL 16 database (pytest, Angular unit tests and a browser end-t
 | 7 | A middleware opened a database session on every request (even for plain browser calls) | Skipped when no `x-user-id` / `x-doctor-id` header is present |
 | 8 | Frontend validators said 100 characters, the database has 255 | Aligned to 255 |
 
-## Known issues NOT changed (need a team decision)
-* **Doctor endpoints trust the `X-Doctor-Id` header** — anyone can claim to be any doctor. Doctors need
-  their own login (like users) before this is safe for real data.
-* **`POST /sync/batch` has no authentication** — anyone can write readings for any device id.
-  It should require a user token and check that the device belongs to that user (or a device key).
-* **Row Level Security is not enabled anywhere** (no `ENABLE ROW LEVEL SECURITY` / policies), so the
-  "shadow RLS" check and `SET LOCAL app.current_*` currently have no effect.
-* Migration `0014` creates the role `app_user` with the password `change_me_please`.
-* The JWT is stored in `localStorage` (simple, but readable by any script running on the page).
+## Stage 1 Security & Infrastructure Resolutions
+* **Doctor endpoints require a verified `role="doctor"` JWT** (`POST /api/v1/auth/doctor/login`, `get_current_doctor`, `get_verified_doctor`); `X-Doctor-Id` and `X-User-Id` headers are no longer used.
+* **`POST /api/v1/sync/batch` and `POST /api/v1/sync/reading` require a `role="user"` JWT**, verify device ownership, validate batch size (`<= 1000`) and UTC timestamps, and execute atomically.
+* **Fake RLS middleware & shadow check removed** (`ContextSetterMiddleware`, `DoctorAccessLogMiddleware`, `rls_shadow.py`); Variant B centralized application-level authorization is documented in [SECURITY.md](file:///C:/Users/Asus/.gemini/antigravity/worktrees/fintess-monitoring/infrastructure_security_hardening/docs/SECURITY.md).
+* **Legacy `app_user` password neutralized**: migration `0021` and `scripts/configure_db_roles.py` remove the `'change_me_please'` password and enforce least-privilege DML grants.

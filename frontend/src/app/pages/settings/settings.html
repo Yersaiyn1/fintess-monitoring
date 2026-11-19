@@ -1,0 +1,77 @@
+<div class="settings-grid">
+  <section class="panel" aria-labelledby="profile-title">
+    <h2 id="profile-title">Profile</h2>
+    @if (auth.user(); as u) {
+      <dl class="profile-details">
+        <div><dt>Full name</dt><dd>{{ u.fullName }}</dd></div>
+        <div><dt>Email</dt><dd>{{ u.email }}</dd></div>
+        <div><dt>Birth date</dt><dd>{{ u.birthDate }}</dd></div>
+      </dl>
+    }
+  </section>
+
+  <section class="panel" aria-labelledby="doctor-access-title">
+    <h2 id="doctor-access-title">Doctor access control</h2>
+    <p class="subtitle">
+      Grant read-only access to your health readings for a specific date window (both dates inclusive).
+    </p>
+
+    <form class="grant-form" (ngSubmit)="grantAccess()">
+      <label>
+        Doctor
+        <select [(ngModel)]="selectedDoctorId" name="doctorId" required>
+          @for (d of doctors(); track d.doctor_id) {
+            <option [ngValue]="d.doctor_id">
+              {{ d.full_name }} ({{ d.specialty || 'General' }} · {{ d.license_number }})
+            </option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Start date
+        <input type="date" [(ngModel)]="accessStart" name="accessStart" required />
+      </label>
+
+      <label>
+        End date
+        <input type="date" [(ngModel)]="accessEnd" name="accessEnd" required />
+      </label>
+
+      <button type="submit" class="action" [disabled]="busy() || !doctors().length">
+        Grant / Update Access
+      </button>
+    </form>
+
+    @if (message()) {
+      <p class="status-ok" role="status">{{ message() }}</p>
+    }
+    @if (error()) {
+      <p class="status-err" role="alert">{{ error() }}</p>
+    }
+
+    <h3 class="list-title">Granted permissions</h3>
+    <ul class="access-list">
+      @for (p of permissions(); track p.doctor_id) {
+        <li>
+          <div class="info">
+            <strong>{{ p.doctor_name }}</strong>
+            <span class="muted">
+              {{ p.specialty || 'General' }} · {{ p.license_number }} · {{ p.access_start }} → {{ p.access_end }}
+            </span>
+          </div>
+          <div class="actions">
+            <span class="badge" [class.active]="p.is_active" [class.expired]="!p.is_active">
+              {{ p.is_active ? 'Active' : 'Inactive' }}
+            </span>
+            <button type="button" class="revoke" [disabled]="busy()" (click)="revokeAccess(p.doctor_id)">
+              Revoke
+            </button>
+          </div>
+        </li>
+      } @empty {
+        <li class="empty muted">No doctors currently have access to your data.</li>
+      }
+    </ul>
+  </section>
+</div>

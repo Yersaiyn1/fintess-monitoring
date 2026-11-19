@@ -1,10 +1,14 @@
-"""SQLAlchemy model for RLS mismatch logging.
+"""Legacy SQLAlchemy model for the `rls_mismatch_log` table.
 
-The table is created by migration 0012_create_rls_mismatch_log.py.
+Retained solely for backwards compatibility with migration `0012_create_rls_mismatch_log.py`
+and existing database schemas (non-destructive migration policy). The fake shadow RLS comparison
+has been removed in Stage 1 in favor of Variant B (verified application-level authorization).
 """
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
+
 from app.db.base import Base
+
 
 class RlsMismatchLog(Base):
     __tablename__ = "rls_mismatch_log"
@@ -16,4 +20,3 @@ class RlsMismatchLog(Base):
     doctor_id = Column(Integer, nullable=True)
     rows_mismatched = Column(Integer, nullable=False)
     details = Column(Text, nullable=True)
-
