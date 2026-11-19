@@ -128,6 +128,7 @@ async def configure_runtime_role(
             ("Workouts", "SELECT, INSERT, UPDATE"),
             ("Access_Log", "SELECT, INSERT"),
             ("Refresh_Tokens", "SELECT, INSERT, UPDATE, DELETE"),
+            ("Goals", "SELECT, INSERT, UPDATE, DELETE"),
         ]
         for table_name, privs in table_grants:
             await conn.execute(

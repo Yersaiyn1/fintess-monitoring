@@ -18,4 +18,5 @@ from app.models.workout import Workout  # noqa: F401
 # Phase 3 — History & Analytics:    (no new tables; index added by migration 0017)
 # Stage 2 — Devices & Refresh Tokens
 from app.models.refresh_token import RefreshToken  # noqa: F401
-# Phase 4 — Goals & Settings:       (add goal / user_settings models here)
+# Phase 4 — Goals & Settings:
+from app.models.goal import Goal  # noqa: F401

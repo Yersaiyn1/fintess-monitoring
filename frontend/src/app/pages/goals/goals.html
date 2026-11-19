@@ -1,0 +1,110 @@
+<div class="goals-layout">
+  @if (alerts(); as a) {
+    <section
+      class="panel alerts"
+      [class.warn]="a.high_heart_rate_alert || a.inactivity_alert"
+      aria-labelledby="alerts-title"
+    >
+      <div class="alerts-head">
+        <div>
+          <h2 id="alerts-title">Health & activity alerts (last 7 days)</h2>
+          <p class="muted">
+            Active days: {{ a.active_days_7d }} / 7
+            @if (a.avg_heart_rate_7d !== null) {
+              · Avg heart rate: {{ a.avg_heart_rate_7d | number: '1.1-1' }} bpm ({{ a.heart_rate_readings_7d }} readings)
+            }
+          </p>
+        </div>
+        <span class="status-pill" [class.alert]="a.high_heart_rate_alert || a.inactivity_alert">
+          {{ a.high_heart_rate_alert || a.inactivity_alert ? 'Attention needed' : 'All clear' }}
+        </span>
+      </div>
+
+      @if (a.messages.length) {
+        <ul class="alert-list">
+          @for (msg of a.messages; track msg) {
+            <li>{{ msg }}</li>
+          }
+        </ul>
+      }
+    </section>
+  }
+
+  <section class="panel" aria-labelledby="goal-form-title">
+    <h2 id="goal-form-title">Set or update a goal</h2>
+    <form class="goal-form" (ngSubmit)="saveGoal()">
+      <label>
+        Period
+        <select [(ngModel)]="period" name="period">
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </label>
+
+      <label>
+        Metric
+        <select [(ngModel)]="metric" name="metric">
+          @for (m of metricOptions; track m.value) {
+            <option [value]="m.value">{{ m.label }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Target
+        <input
+          type="number"
+          min="1"
+          step="any"
+          [(ngModel)]="targetValue"
+          name="targetValue"
+          required
+        />
+      </label>
+
+      <button type="submit" class="action" [disabled]="busy()">Save goal</button>
+    </form>
+
+    @if (message()) {
+      <p class="status-ok" role="status">{{ message() }}</p>
+    }
+    @if (error()) {
+      <p class="status-err" role="alert">{{ error() }}</p>
+    }
+  </section>
+
+  <section class="goals-grid" aria-label="Active goals">
+    @for (g of goals(); track g.goal_id) {
+      <article class="panel goal-card">
+        <div class="card-head">
+          <div>
+            <span class="period">{{ g.period }}</span>
+            <h3>{{ metricLabel(g.metric) }}</h3>
+          </div>
+          @if (g.achieved) {
+            <span class="achieved">Achieved</span>
+          }
+        </div>
+
+        <div class="ring-wrap">
+          <app-progress-ring
+            [progress]="g.progress_percent / 100"
+            [size]="130"
+            [stroke]="12"
+            [label]="metricLabel(g.metric)"
+          />
+          <div class="numbers">
+            <strong>{{ g.current_value | number: '1.0-2' }}</strong>
+            <span class="muted">of {{ g.target_value | number: '1.0-2' }}</span>
+          </div>
+        </div>
+
+        <button type="button" class="delete" [disabled]="busy()" (click)="deleteGoal(g.goal_id)">
+          Remove
+        </button>
+      </article>
+    } @empty {
+      <p class="panel empty muted">No goals yet. Add a daily or weekly target above.</p>
+    }
+  </section>
+</div>

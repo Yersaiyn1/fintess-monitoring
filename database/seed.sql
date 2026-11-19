@@ -106,3 +106,15 @@ FROM (VALUES
 JOIN "Users" u ON u.email = v.email
 WHERE NOT EXISTS (SELECT 1 FROM "Workouts" w WHERE w.user_id = u.user_id);
 
+-- Goals (Phase 4): demo daily & weekly goals for Alice and Bob
+INSERT INTO "Goals" (user_id, period, metric, target_value)
+SELECT u.user_id, v.period, v.metric, v.target_value
+FROM (VALUES
+    ('alice@example.com', 'daily',  'steps',          8000),
+    ('alice@example.com', 'daily',  'calories_kcal',   400),
+    ('alice@example.com', 'weekly', 'workouts',          4),
+    ('bob@example.com',   'daily',  'steps',         10000)
+) AS v(email, period, metric, target_value)
+JOIN "Users" u ON u.email = v.email
+ON CONFLICT (user_id, period, metric) DO NOTHING;
+

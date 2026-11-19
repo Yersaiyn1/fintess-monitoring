@@ -46,8 +46,7 @@ export const routes: Routes = [
       {
         path: 'goals',
         title: 'Goals',
-        loadComponent: placeholder,
-        data: { heading: 'Goals and progress', text: 'Set daily and weekly targets, follow progress bars and get notified after 7 inactive days.', phase: 4 },
+        loadComponent: () => import('./pages/goals/goals').then((m) => m.Goals),
       },
       {
         path: 'settings',

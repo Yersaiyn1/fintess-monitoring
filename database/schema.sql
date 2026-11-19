@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS "Devices" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_api_key_hash
     ON "Devices" (api_key_hash) WHERE api_key_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_serial_number
+    ON "Devices" (serial_number);
 
 -- ─────────────────────────────────────────
 -- Health_Readings
@@ -172,3 +174,22 @@ CREATE TABLE IF NOT EXISTS "Refresh_Tokens" (
 );
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_subject_role
     ON "Refresh_Tokens" (subject_id, role);
+
+-- ─────────────────────────────────────────
+-- Goals  (Phase 4 — migration 0023)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Goals" (
+    goal_id      SERIAL PRIMARY KEY,
+    user_id      INTEGER          NOT NULL REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    period       VARCHAR(20)      NOT NULL,
+    metric       VARCHAR(30)      NOT NULL,
+    target_value DOUBLE PRECISION NOT NULL,
+    created_at   TIMESTAMPTZ      NOT NULL DEFAULT now(),
+    CONSTRAINT uq_goals_user_period_metric UNIQUE (user_id, period, metric),
+    CONSTRAINT ck_goals_period CHECK (period IN ('daily', 'weekly')),
+    CONSTRAINT ck_goals_metric CHECK (
+        metric IN ('steps', 'calories_kcal', 'distance_km', 'active_minutes', 'workouts')
+    ),
+    CONSTRAINT ck_goals_target_positive CHECK (target_value > 0)
+);
+CREATE INDEX IF NOT EXISTS idx_goals_user_id ON "Goals" (user_id);
