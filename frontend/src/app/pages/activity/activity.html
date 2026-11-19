@@ -44,6 +44,36 @@
     }
   </section>
 
+  <!-- Health device and reading sync -->
+  <section class="panel sync" aria-labelledby="sync-title">
+    <h2 id="sync-title">Device readings</h2>
+    <div class="device-form">
+      <input [(ngModel)]="model" name="model" placeholder="Device model" />
+      <input [(ngModel)]="serialNumber" name="serialNumber" placeholder="Serial number" />
+      <button type="button" class="action" (click)="addDevice()">Add device</button>
+    </div>
+    @if (devices().length) {
+      <div class="reading-form">
+        <select [(ngModel)]="selectedDeviceId" name="deviceId" aria-label="Device">
+          @for (device of devices(); track device.device_id) {
+            <option [ngValue]="device.device_id">{{ device.model }} ({{ device.serial_number }})</option>
+          }
+        </select>
+        <input [(ngModel)]="heartRate" name="heartRate" type="number" min="30" max="220" placeholder="Heart rate" />
+        <input [(ngModel)]="steps" name="steps" type="number" min="0" placeholder="Steps" />
+        <input [(ngModel)]="calories" name="calories" type="number" min="0" step="0.1" placeholder="Calories" />
+        <input [(ngModel)]="bloodPressure" name="bloodPressure" placeholder="Blood pressure" />
+        <button type="button" class="action" (click)="saveReading()">Save reading</button>
+      </div>
+    }
+    @if (syncMessage) {
+      <p class="sync-message" role="status">{{ syncMessage }}</p>
+    }
+    @if (syncError) {
+      <p class="error" role="alert">{{ syncError }}</p>
+    }
+  </section>
+
   <!-- Result of the last workout + latest workouts -->
   <section class="panel" aria-labelledby="latest-title">
     @if (tracker.lastResult(); as r) {
