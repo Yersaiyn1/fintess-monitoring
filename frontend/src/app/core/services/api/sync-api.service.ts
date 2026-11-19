@@ -13,6 +13,14 @@ export interface DeviceRecord {
   last_sync_time: string | null;
 }
 
+export interface HealthConnectUploadResponse {
+  filename: string;
+  total_parsed: number;
+  inserted: number;
+  duplicates_skipped: number;
+  metrics_breakdown: Record<string, number>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SyncApiService {
   private readonly http = inject(HttpClient);
@@ -47,5 +55,12 @@ export class SyncApiService {
     blood_pressure: string | null;
   }): Observable<{ reading_id: number; status: string }> {
     return this.http.post<{ reading_id: number; status: string }>(`${this.url}/reading`, body);
+  }
+
+  /** POST /api/v1/sync/upload-hc — import Android Health Connect .zip or .db export */
+  uploadHealthConnectArchive(file: File): Observable<HealthConnectUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<HealthConnectUploadResponse>(`${this.url}/upload-hc`, formData);
   }
 }

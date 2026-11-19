@@ -18,9 +18,11 @@ import hashlib
 import hmac
 import logging
 import secrets
+import sqlite3
+import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, update
@@ -35,10 +37,12 @@ from app.models.device import Device
 from app.models.health_reading import HealthReading
 from app.models.user import User
 from app.schemas.health_reading import ensure_utc_datetime
-from app.schemas.sync import SyncBatchRequest, SyncBatchResponse
+from app.schemas.sync import HealthConnectUploadResponse, SyncBatchRequest, SyncBatchResponse
+from app.services.hc_importer import parse_health_connect_bytes
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+HC_BATCH_SIZE = 500
 
 _bearer_optional = HTTPBearer(auto_error=False)
 
@@ -471,4 +475,100 @@ async def sync_batch(
         device_id=payload.device_id,
         synced_count=synced_count,
         skipped_count=skipped_count,
+    )
+
+
+@router.post(
+    "/upload-hc",
+    response_model=HealthConnectUploadResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def upload_health_connect(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> HealthConnectUploadResponse:
+    """Import an Android Health Connect export (.zip containing .db, or direct .db)."""
+    filename = file.filename or ""
+    if not filename.lower().endswith((".zip", ".db")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only .zip and .db files are supported.",
+        )
+
+    raw_bytes = await file.read()
+    if not raw_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
+
+    try:
+        parsed = parse_health_connect_bytes(raw_bytes, filename=filename)
+    except (ValueError, sqlite3.Error, zipfile.BadZipFile) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    result = await db.execute(
+        select(Device)
+        .where(Device.user_id == current_user.user_id)
+        .order_by(Device.is_active.desc(), Device.device_id.asc())
+        .with_for_update()
+    )
+    device = result.scalars().first()
+    if device is None:
+        device = Device(
+            user_id=current_user.user_id,
+            model=parsed.device_model,
+            serial_number=f"HC-{current_user.user_id}",
+            is_active=True,
+        )
+        db.add(device)
+        await db.flush()
+
+    inserted = 0
+    total_parsed = len(parsed.readings)
+    if parsed.readings:
+        insert_fn = _dialect_insert(db)
+        for i in range(0, total_parsed, HC_BATCH_SIZE):
+            batch = [
+                {
+                    "device_id": device.device_id,
+                    "date_time": reading["date_time"],
+                    "heart_rate_bpm": reading["heart_rate_bpm"],
+                    "steps": reading["steps"],
+                    "calories_kcal": reading["calories_kcal"],
+                    "blood_pressure": reading["blood_pressure"],
+                }
+                for reading in parsed.readings[i : i + HC_BATCH_SIZE]
+            ]
+            stmt = (
+                insert_fn(HealthReading)
+                .values(batch)
+                .on_conflict_do_nothing(index_elements=["device_id", "date_time"])
+            )
+            res = await db.execute(stmt)
+            if res.rowcount is not None and res.rowcount > 0:
+                inserted += res.rowcount
+
+    device.last_sync_time = datetime.now(timezone.utc)
+    await db.commit()
+
+    duplicates_skipped = max(0, total_parsed - inserted)
+    logger.info(
+        "Health Connect import user_id=%s device_id=%s parsed=%s inserted=%s skipped=%s",
+        current_user.user_id,
+        device.device_id,
+        total_parsed,
+        inserted,
+        duplicates_skipped,
+    )
+    return HealthConnectUploadResponse(
+        filename=filename,
+        total_parsed=total_parsed,
+        inserted=inserted,
+        duplicates_skipped=duplicates_skipped,
+        metrics_breakdown=parsed.metrics_breakdown,
     )
