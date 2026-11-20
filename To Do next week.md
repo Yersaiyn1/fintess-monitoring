@@ -1,8 +1,8 @@
-# To Do Next Week
+# To Do 13 Week
 
 ## General
 
-- [x] **Dark theme** — Improve text contrast on white backgrounds in Profile, the Add Device form, and the `.zip` / `.db` import controls.
+- [ ] **Dark theme** — Improve text contrast on white backgrounds in Profile, the Add Device form, and the `.zip` / `.db` import controls.
 - [ ] **Goals** — Check why the bar chart is missing or broken and get it working.
 - [ ] **Activity** — Add a way to cancel entering a device reading or delete a saved reading.
 - [ ] **History** — Decide where saved device readings should appear. They currently do not show up in Workouts. A dedicated section may make sense.
