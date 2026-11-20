@@ -20,7 +20,7 @@
 
 /* Hero: the one dark, memorable block */
 .hero {
-  background: var(--ink); color: #fff;
+  background: #101a1c; color: #fff;
   border-radius: var(--radius-lg);
   padding: 28px 24px 24px;
   display: grid; justify-items: center; gap: 18px;
@@ -50,7 +50,7 @@
   font-size: 13.5px; font-weight: 500; color: var(--ink-muted);
 }
 .segmented button:hover { color: var(--ink); }
-.segmented button.on { background: var(--ink); color: #fff; }
+.segmented button.on { background: var(--mint); color: #101a1c; }
 
 .recent h2 { margin-bottom: 8px; }
 ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 32px; }

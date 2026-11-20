@@ -17,6 +17,13 @@ export interface RegisterData {
   password: string;
 }
 
+export interface AccountUpdateData {
+  fullName: string;
+  email: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
 export type AuthResult = { ok: true } | { ok: false; error: string };
 
 /** Shapes returned by the FastAPI backend (backend/app/schemas/auth.py). */
@@ -68,6 +75,29 @@ export class AuthService {
   logout(): void {
     this._session.set(null);
     try { localStorage.removeItem(SESSION_KEY); } catch { /* storage unavailable */ }
+  }
+
+  async updateAccount(data: AccountUpdateData): Promise<AuthResult> {
+    const body: Record<string, string> = {
+      full_name: data.fullName.trim(),
+      email: data.email.trim().toLowerCase(),
+    };
+    if (data.newPassword) {
+      body['current_password'] = data.currentPassword ?? '';
+      body['new_password'] = data.newPassword;
+    }
+    try {
+      const user = await firstValueFrom(this.http.patch<ApiUser>(`${this.base}/auth/me`, body));
+      this._session.update((session) => session ? {
+        ...session,
+        user: { id: user.user_id, fullName: user.full_name, email: user.email, birthDate: user.birth_date },
+      } : session);
+      const session = this._session();
+      if (session) this.save(session);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: this.messageFrom(e, 'Could not update your account.') };
+    }
   }
 
   private async authenticate(path: string, body: object, fallbackError: string): Promise<AuthResult> {

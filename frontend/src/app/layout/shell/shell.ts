@@ -4,6 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs';
 import { Navbar } from '../navbar/navbar';
 import { Sidebar } from '../sidebar/sidebar';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 @Component({
   selector: 'app-shell',
@@ -14,6 +15,7 @@ import { Sidebar } from '../sidebar/sidebar';
 })
 export class Shell {
   private readonly router = inject(Router);
+  protected readonly preferences = inject(UserPreferencesService).preferences;
 
   /** Mobile drawer state */
   protected readonly menuOpen = signal(false);

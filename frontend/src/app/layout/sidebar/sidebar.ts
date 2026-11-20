@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NavItem } from '../../core/models/stat.model';
 import { Icon } from '../../shared/icon/icon';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,6 +12,7 @@ import { Icon } from '../../shared/icon/icon';
   styleUrl: './sidebar.scss',
 })
 export class Sidebar {
+  protected readonly preferences = inject(UserPreferencesService).preferences;
   /** Emitted after a link is chosen, so the mobile drawer can close. */
   readonly navigated = output<void>();
   readonly closeRequested = output<void>();

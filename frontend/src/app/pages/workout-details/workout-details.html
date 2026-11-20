@@ -14,7 +14,7 @@
     <dl class="tiles">
       <div><dt>Duration</dt><dd>{{ formatDuration(w.durationSec) }}</dd></div>
       <div><dt>Steps</dt><dd>{{ w.steps | number }}</dd></div>
-      <div><dt>Distance</dt><dd>{{ w.distanceKm | number: '1.2-2' }} <small>km</small></dd></div>
+      <div><dt>Distance</dt><dd>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} <small>{{ preferences.distanceUnitLabel() }}</small></dd></div>
       <div><dt>Calories</dt><dd>{{ w.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
     </dl>
 
@@ -22,8 +22,8 @@
     <dl class="rows">
       <div><dt>Started</dt><dd>{{ formatTime(w.startedAt) }}</dd></div>
       <div><dt>Finished</dt><dd>{{ w.endedAt ? formatTime(w.endedAt) : '—' }}</dd></div>
-      <div><dt>Average speed</dt><dd>{{ speed() === null ? '—' : (speed()! | number: '1.1-1') + ' km/h' }}</dd></div>
-      <div><dt>Average pace</dt><dd>{{ pace() === null ? '—' : pace() + ' min/km' }}</dd></div>
+      <div><dt>Average speed</dt><dd>{{ speed() === null ? '—' : (speed()! | number: '1.1-1') + ' ' + preferences.speedUnitLabel() }}</dd></div>
+      <div><dt>Average pace</dt><dd>{{ pace() === null ? '—' : pace() + ' ' + preferences.paceUnitLabel() }}</dd></div>
       <div><dt>Energy per minute</dt><dd>{{ kcalPerMin() === null ? '—' : (kcalPerMin()! | number: '1.1-1') + ' kcal' }}</dd></div>
     </dl>
   </section>

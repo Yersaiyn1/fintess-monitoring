@@ -4,7 +4,8 @@
   height: 100%;
   display: flex; flex-direction: column; gap: 28px;
   padding: 22px 16px;
-  background: var(--ink);
+  /* Keep navigation dark in both appearance modes for consistent contrast. */
+  background: #101a1c;
   color: #d7dfdc;
 }
 
@@ -20,10 +21,55 @@ nav { display: grid; gap: 4px; }
   color: #aebbb7; font-weight: 500;
   transition: background-color 140ms, color 140ms;
 }
-.link:hover { background: var(--ink-soft); color: #fff; }
-.link.active { background: var(--mint); color: var(--ink); font-weight: 600; }
+.link:hover { background: #1b2a2d; color: #fff; }
+.link.active { background: var(--mint); color: #101a1c; font-weight: 600; }
 
 .foot { margin-top: auto; padding: 0 8px; font-size: 12px; color: #6f807c; }
+
+@media (min-width: 901px) {
+  .sidebar { gap: 28px; padding: 22px 10px; overflow: hidden; transition: padding 200ms ease; }
+  .brand { justify-content: center; padding: 0; }
+  .name, .link span, .foot {
+    width: 0;
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 120ms ease, width 200ms ease, max-width 200ms ease;
+  }
+  .link { justify-content: center; gap: 0; padding-inline: 0; }
+
+  .sidebar.always-open { padding-inline: 16px; }
+  .sidebar.always-open .brand { justify-content: flex-start; padding-inline: 8px; }
+  .sidebar.always-open .name,
+  .sidebar.always-open .link span,
+  .sidebar.always-open .foot {
+    width: auto;
+    max-width: 180px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sidebar.always-open .link { justify-content: flex-start; gap: 12px; padding: 11px 12px; }
+
+  :host-context(.side:hover) .sidebar:not(.always-closed),
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) { padding-inline: 16px; }
+  :host-context(.side:hover) .sidebar:not(.always-closed) .brand,
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) .brand { justify-content: flex-start; padding-inline: 8px; }
+  :host-context(.side:hover) .sidebar:not(.always-closed) .name,
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) .name,
+  :host-context(.side:hover) .sidebar:not(.always-closed) .link span,
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) .link span,
+  :host-context(.side:hover) .sidebar:not(.always-closed) .foot,
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) .foot {
+    width: auto;
+    max-width: 180px;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  :host-context(.side:hover) .sidebar:not(.always-closed) .link,
+  :host-context(.side:focus-within) .sidebar:not(.always-closed) .link { justify-content: flex-start; gap: 12px; padding: 11px 12px; }
+}
 
 @media (max-width: 900px) {
   .close { display: inline-flex; }

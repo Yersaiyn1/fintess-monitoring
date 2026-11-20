@@ -1,0 +1,41 @@
+<section class="page">
+  <header><p class="eyebrow">PREFERENCES</p><h2>Settings</h2><p>Make Pulse feel comfortable to use.</p></header>
+
+  <section class="group" aria-labelledby="appearance-title">
+    <div class="group-head"><span class="group-icon" aria-hidden="true">◐</span><div><h3 id="appearance-title">Appearance</h3><p>Choose how Pulse looks across the app.</p></div></div>
+    <div class="theme-options" role="radiogroup" aria-label="Color theme">
+      <button type="button" class="theme-choice light" [class.selected]="preferences().theme === 'light'" role="radio" [attr.aria-checked]="preferences().theme === 'light'" (click)="setTheme('light')">
+        <span class="preview light-preview"><i></i><i></i><i></i></span><span><strong>Light</strong><small>Bright and clear</small></span><span class="radio" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="theme-choice dark" [class.selected]="preferences().theme === 'dark'" role="radio" [attr.aria-checked]="preferences().theme === 'dark'" (click)="setTheme('dark')">
+        <span class="preview dark-preview"><i></i><i></i><i></i></span><span><strong>Dark</strong><small>Easy on the eyes</small></span><span class="radio" aria-hidden="true"></span>
+      </button>
+    </div>
+  </section>
+
+  <section class="group" aria-labelledby="units-title">
+    <div class="group-head"><span class="group-icon units" aria-hidden="true">↔</span><div><h3 id="units-title">Distance units</h3><p>Choose the unit used for distance, pace and speed throughout the app.</p></div></div>
+    <div class="unit-options" role="radiogroup" aria-label="Distance units">
+      <button type="button" [class.selected]="preferences().distanceUnit === 'km'" role="radio" [attr.aria-checked]="preferences().distanceUnit === 'km'" (click)="setDistanceUnit('km')"><strong>Kilometers</strong><span>km, km/h, min/km</span><i aria-hidden="true"></i></button>
+      <button type="button" [class.selected]="preferences().distanceUnit === 'mi'" role="radio" [attr.aria-checked]="preferences().distanceUnit === 'mi'" (click)="setDistanceUnit('mi')"><strong>Miles</strong><span>mi, mph, min/mi</span><i aria-hidden="true"></i></button>
+    </div>
+  </section>
+
+  <section class="group" aria-labelledby="access-title">
+    <div class="group-head"><span class="group-icon motion" aria-hidden="true">↝</span><div><h3 id="access-title">Accessibility</h3><p>Adjust visual effects to suit your preference.</p></div></div>
+    <label class="setting">
+      <span><strong>Reduce motion</strong><small>Turn off animations and transitions throughout Pulse.</small></span>
+      <input type="checkbox" [ngModel]="preferences().reduceMotion" name="reduceMotion" (ngModelChange)="setReducedMotion($event)" />
+    </label>
+    <label class="setting sidebar-setting">
+      <span><strong>Sidebar behavior</strong><small>Choose how the navigation stays visible.</small></span>
+      <select [ngModel]="preferences().sidebarMode" name="sidebarMode" (ngModelChange)="setSidebarMode($event)">
+        <option value="hover">Expand on hover</option>
+        <option value="expanded">Always open</option>
+        <option value="collapsed">Always collapsed</option>
+      </select>
+    </label>
+  </section>
+
+  @if (saved) { <p class="status" role="status">Your preferences are saved on this device.</p> }
+</section>

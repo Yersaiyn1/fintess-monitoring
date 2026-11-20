@@ -27,7 +27,7 @@
 
 /* The one dark block of the page */
 .tracker {
-  background: var(--ink);
+  background: #101a1c;
   color: #fff;
   border-radius: var(--radius-lg);
   padding: 26px 24px;
@@ -71,7 +71,7 @@
 }
 .kind.on {
   background: #fff;
-  color: var(--ink);
+  color: #101a1c;
   border-color: #fff;
 }
 .kind:disabled:not(.on) {
@@ -143,7 +143,7 @@
 }
 .start {
   background: var(--mint);
-  color: var(--ink);
+  color: #101a1c;
 }
 .stop {
   background: var(--coral);
@@ -190,7 +190,7 @@
 .sync .action {
   width: auto;
   background: var(--mint);
-  color: var(--ink);
+  color: #101a1c;
   padding: 10px 14px;
 }
 .sync-message {
