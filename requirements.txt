@@ -1,0 +1,4 @@
+# Python dependencies for the FastAPI backend.
+-r backend/requirements.txt
+
+# Install Angular dependencies separately with: npm ci --prefix frontend

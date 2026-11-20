@@ -54,6 +54,35 @@ class LoginRequest(BaseModel):
         return v.strip().lower()
 
 
+class AccountUpdateRequest(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=255)
+    email: EmailStr | None = None
+    current_password: str | None = Field(default=None, min_length=1, max_length=256)
+    new_password: str | None = Field(default=None, min_length=8, max_length=64)
+
+    @field_validator("full_name")
+    @classmethod
+    def _name_not_blank(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        v = v.strip()
+        if not v:
+            raise ValueError("Full name must not be blank.")
+        return v
+
+    @field_validator("email")
+    @classmethod
+    def _email_lower(cls, v: str | None) -> str | None:
+        return v.strip().lower() if v is not None else None
+
+    @field_validator("new_password")
+    @classmethod
+    def _password_strength(cls, v: str | None) -> str | None:
+        if v is not None and not (re.search(r"[^\W\d_]", v) and re.search(r"\d", v)):
+            raise ValueError("Password must contain at least one letter and one digit.")
+        return v
+
+
 class UserResponse(BaseModel):
     user_id: int
     full_name: str

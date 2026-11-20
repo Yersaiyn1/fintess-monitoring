@@ -2,8 +2,6 @@ import { Routes } from '@angular/router';
 import { Shell } from './layout/shell/shell';
 import { authGuard, guestGuard } from './core/guards/auth.guard';
 
-const placeholder = () => import('./pages/placeholder/placeholder').then((m) => m.Placeholder);
-
 export const routes: Routes = [
   {
     path: 'login',
@@ -46,14 +44,17 @@ export const routes: Routes = [
       {
         path: 'goals',
         title: 'Goals',
-        loadComponent: placeholder,
-        data: { heading: 'Goals and progress', text: 'Set daily and weekly targets, follow progress bars and get notified after 7 inactive days.', phase: 4 },
+        loadComponent: () => import('./pages/goals/goals').then((m) => m.Goals),
       },
       {
         path: 'settings',
         title: 'Settings',
-        loadComponent: placeholder,
-        data: { heading: 'Profile and settings', text: 'Manage your profile and preferences. Everything is stored in your browser.', phase: 4 },
+        loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings),
+      },
+      {
+        path: 'profile',
+        title: 'Profile',
+        loadComponent: () => import('./pages/profile/profile').then((m) => m.Profile),
       },
       { path: '**', redirectTo: 'dashboard' },
     ],

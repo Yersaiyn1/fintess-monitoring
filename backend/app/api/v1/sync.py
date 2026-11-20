@@ -11,7 +11,8 @@ import sqlite3
 import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -21,17 +22,129 @@ from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
 from app.models.user import User
-from app.schemas.sync import HealthConnectUploadResponse, SyncBatchRequest, SyncBatchResponse
-from app.services.hc_importer import parse_health_connect_bytes
+from app.schemas.sync import SyncBatchRequest, SyncBatchResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 HC_BATCH_SIZE = 500
 
 
+class DeviceCreateRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=255)
+    serial_number: str = Field(min_length=1, max_length=255)
+
+
+class DeviceResponse(BaseModel):
+    device_id: int
+    model: str
+    serial_number: str
+    last_sync_time: datetime | None = None
+
+
+class ReadingCreateRequest(BaseModel):
+    device_id: int
+    date_time: datetime
+    heart_rate_bpm: int | None = Field(default=None, ge=30, le=220)
+    steps: int | None = Field(default=None, ge=0)
+    calories_kcal: float | None = Field(default=None, ge=0)
+    blood_pressure: str | None = Field(default=None, max_length=20)
+
+
+@router.get("/devices", response_model=list[DeviceResponse])
+async def list_devices(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Device).where(Device.user_id == user.user_id).order_by(Device.device_id)
+    )
+    devices = result.scalars().all()
+    return [
+        DeviceResponse(
+            device_id=d.device_id,
+            model=d.model,
+            serial_number=d.serial_number,
+            last_sync_time=d.last_sync_time,
+        )
+        for d in devices
+    ]
+
+
+@router.post("/devices", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
+async def add_device(
+    payload: DeviceCreateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    model = payload.model.strip()
+    serial_number = payload.serial_number.strip()
+    if not model or not serial_number:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Model and serial number are required.")
+
+    result = await db.execute(
+        select(Device).where(
+            Device.user_id == user.user_id,
+            Device.serial_number == serial_number,
+        )
+    )
+    device = result.scalar_one_or_none()
+    if device is None:
+        device = Device(user_id=user.user_id, model=model, serial_number=serial_number)
+        db.add(device)
+        await db.commit()
+        await db.refresh(device)
+
+    return DeviceResponse(
+        device_id=device.device_id,
+        model=device.model,
+        serial_number=device.serial_number,
+        last_sync_time=device.last_sync_time,
+    )
+
+
+@router.post("/reading", status_code=status.HTTP_201_CREATED)
+async def create_reading(
+    payload: ReadingCreateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Device).where(
+            Device.device_id == payload.device_id,
+            Device.user_id == user.user_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Device not found.")
+
+    reading = HealthReading(
+        device_id=payload.device_id,
+        date_time=payload.date_time,
+        heart_rate_bpm=payload.heart_rate_bpm,
+        steps=payload.steps,
+        calories_kcal=payload.calories_kcal,
+        blood_pressure=payload.blood_pressure,
+    )
+    db.add(reading)
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "A reading at this time already exists.")
+    await db.refresh(reading)
+    await db.execute(
+        update(Device)
+        .where(Device.device_id == payload.device_id)
+        .values(last_sync_time=datetime.now(timezone.utc))
+    )
+    await db.commit()
+    return {"reading_id": reading.reading_id, "status": "saved"}
+
+
 @router.post("/batch", response_model=SyncBatchResponse, status_code=status.HTTP_200_OK)
 async def sync_batch(
     payload: SyncBatchRequest,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -44,7 +157,10 @@ async def sync_batch(
         # 1. Lock the device row to serialize concurrent syncs
         result = await db.execute(
             select(Device)
-            .where(Device.device_id == payload.device_id)
+            .where(
+                Device.device_id == payload.device_id,
+                Device.user_id == user.user_id,
+            )
             .with_for_update()
         )
         device = result.scalar_one_or_none()

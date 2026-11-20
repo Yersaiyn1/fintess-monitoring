@@ -6,7 +6,7 @@
   display: grid;
   gap: 20px;
   grid-template-columns: minmax(300px, 420px) 1fr;
-  grid-template-areas: 'tracker stats' 'panel panel';
+  grid-template-areas: 'tracker stats' 'sync sync' 'panel panel';
 }
 .tracker {
   grid-area: tracker;
@@ -21,10 +21,13 @@
 .panel {
   grid-area: panel;
 }
+.sync {
+  grid-area: sync;
+}
 
 /* The one dark block of the page */
 .tracker {
-  background: var(--ink);
+  background: #101a1c;
   color: #fff;
   border-radius: var(--radius-lg);
   padding: 26px 24px;
@@ -68,7 +71,7 @@
 }
 .kind.on {
   background: #fff;
-  color: var(--ink);
+  color: #101a1c;
   border-color: #fff;
 }
 .kind:disabled:not(.on) {
@@ -140,7 +143,7 @@
 }
 .start {
   background: var(--mint);
-  color: var(--ink);
+  color: #101a1c;
 }
 .stop {
   background: var(--coral);
@@ -161,6 +164,38 @@
 .panel h2 {
   font-size: 20px;
   margin-bottom: 8px;
+}
+.sync {
+  display: grid;
+  gap: 12px;
+}
+.device-form,
+.reading-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 10px;
+}
+.reading-form {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+.sync input,
+.sync select {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  padding: 11px 12px;
+  color: var(--ink);
+}
+.sync .action {
+  width: auto;
+  background: var(--mint);
+  color: #101a1c;
+  padding: 10px 14px;
+}
+.sync-message {
+  color: #18794e;
+  font-size: 14px;
 }
 .saved {
   margin-bottom: 16px;
@@ -207,7 +242,7 @@ li {
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;
-    grid-template-areas: 'tracker' 'stats' 'panel';
+    grid-template-areas: 'tracker' 'stats' 'sync' 'panel';
   }
 }
 @media (max-width: 720px) {
@@ -216,6 +251,10 @@ li {
   }
   .stats {
     gap: 12px;
+  }
+  .device-form,
+  .reading-form {
+    grid-template-columns: 1fr;
   }
   ul {
     grid-template-columns: 1fr;
@@ -228,4 +267,12 @@ li {
   .stats {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 600px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .tracker, .panel { padding: 16px; }
+  .live { column-gap: 8px; }
+  .kind, .sync .action { min-height: 44px; }
+  .sync input, .sync select { width: 100%; min-height: 44px; font-size: 16px; }
 }
