@@ -28,6 +28,8 @@ interface MetricOption {
 export class Dashboard {
   private readonly data = inject(DashboardDataService);
   private readonly preferences = inject(UserPreferencesService);
+  private readonly syncApi = inject(SyncApiService);
+  private readonly tracker = inject(WorkoutTrackerService);
 
   protected readonly today = this.data.today;
   protected readonly goal = this.data.dailyStepGoal;

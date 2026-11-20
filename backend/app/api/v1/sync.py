@@ -11,7 +11,7 @@ import sqlite3
 import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
@@ -22,7 +22,8 @@ from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
 from app.models.user import User
-from app.schemas.sync import SyncBatchRequest, SyncBatchResponse
+from app.schemas.sync import HealthConnectUploadResponse, SyncBatchRequest, SyncBatchResponse
+from app.services.hc_importer import parse_health_connect_bytes
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
