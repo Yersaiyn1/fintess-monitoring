@@ -10,10 +10,24 @@ export interface DeviceRecord {
   last_sync_time: string | null;
 }
 
+export interface HealthConnectUploadResponse {
+  filename: string;
+  total_parsed: number;
+  inserted: number;
+  duplicates_skipped: number;
+  metrics_breakdown: Record<string, number>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SyncApiService {
   private readonly http = inject(HttpClient);
   private readonly url = `${inject(API_BASE_URL)}/sync`;
+
+  uploadHealthConnectArchive(file: File): Observable<HealthConnectUploadResponse> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<HealthConnectUploadResponse>(`${this.url}/upload-hc`, body);
+  }
 
   devices(): Observable<DeviceRecord[]> {
     return this.http.get<DeviceRecord[]>(`${this.url}/devices`);
