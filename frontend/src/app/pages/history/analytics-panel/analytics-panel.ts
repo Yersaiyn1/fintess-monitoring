@@ -5,6 +5,7 @@ import { describeHttpError } from '../../../core/http/error-message';
 import { Analytics, AnalyticsDay, Period } from '../../../core/models/workout.model';
 import { AnalyticsApiService } from '../../../core/services/api/analytics-api.service';
 import { BarChart, ChartBar } from '../../../shared/bar-chart/bar-chart';
+import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 
 type MetricKey = keyof Pick<AnalyticsDay, 'durationMin' | 'caloriesKcal' | 'distanceKm' | 'steps'>;
 interface Metric { key: MetricKey; label: string; unit: string; decimals: number }
@@ -19,6 +20,8 @@ interface Metric { key: MetricKey; label: string; unit: string; decimals: number
 })
 export class AnalyticsPanel {
   private readonly api = inject(AnalyticsApiService);
+  private readonly preferences = inject(UserPreferencesService);
+  protected readonly userPreferences = this.preferences;
   private requestId = 0;
 
   protected readonly periods: { key: Period; label: string }[] = [
@@ -28,7 +31,7 @@ export class AnalyticsPanel {
   protected readonly metrics: Metric[] = [
     { key: 'durationMin', label: 'Minutes', unit: 'min', decimals: 0 },
     { key: 'caloriesKcal', label: 'Calories', unit: 'kcal', decimals: 0 },
-    { key: 'distanceKm', label: 'Distance', unit: 'km', decimals: 1 },
+    { key: 'distanceKm', label: 'Distance', unit: this.preferences.distanceUnitLabel(), decimals: 1 },
     { key: 'steps', label: 'Steps', unit: 'steps', decimals: 0 },
   ];
 
@@ -41,7 +44,7 @@ export class AnalyticsPanel {
   protected readonly bars = computed<ChartBar[]>(() => {
     const days = this.data()?.days ?? [];
     const key = this.metric().key;
-    return days.map((d, i) => ({ label: d.label, value: d[key], isToday: i === days.length - 1 }));
+    return days.map((d, i) => ({ label: d.label, value: key === 'distanceKm' ? this.preferences.distanceFromKm(d.distanceKm) : d[key], isToday: i === days.length - 1 }));
   });
 
   protected readonly longestKind = computed(() =>

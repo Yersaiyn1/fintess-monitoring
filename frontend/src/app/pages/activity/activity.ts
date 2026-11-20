@@ -8,6 +8,7 @@ import { WorkoutTrackerService } from '../../core/services/workout-tracker.servi
 import { DeviceRecord, SyncApiService } from '../../core/services/api/sync-api.service';
 import { formatClock, formatDuration } from '../../core/utils/format';
 import { StatCard } from '../../shared/stat-card/stat-card';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 @Component({
   selector: 'app-activity',
@@ -20,6 +21,7 @@ export class Activity {
   protected readonly tracker = inject(WorkoutTrackerService);
   private readonly dashboard = inject(DashboardDataService);
   private readonly syncApi = inject(SyncApiService);
+  protected readonly preferences = inject(UserPreferencesService);
 
   protected readonly cards = this.dashboard.activityCards;
   protected readonly recent = this.dashboard.recentWorkouts;

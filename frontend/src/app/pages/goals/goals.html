@@ -1,0 +1,63 @@
+<section class="page">
+  <header class="page-head">
+    <div><p class="eyebrow">YOUR TRAINING JOURNAL</p><h2>Your goals</h2><p>Small wins add up. Here's how your week is going.</p></div>
+    <span class="period">This week</span>
+  </header>
+
+  @if (dashboardError()) { <p class="notice" role="alert">{{ dashboardError() }}</p> }
+  @if (analyticsFailed()) { <p class="notice" role="status">Weekly workout stats are temporarily unavailable.</p> }
+
+  <section class="daily-hero" aria-labelledby="daily-title">
+    <div class="hero-copy">
+      <span class="hero-tag"><span class="pulse-dot"></span> TODAY'S FOCUS</span>
+      <h3 id="daily-title">{{ remainingToday() === 0 ? 'You did it!' : 'One step at a time.' }}</h3>
+      <p>{{ remainingToday() === 0 ? 'Your step goal is complete. Enjoy the extra movement.' : 'Keep moving toward your daily step goal. Every bit counts.' }}</p>
+      <div class="hero-numbers"><strong>{{ todaySteps().steps | number }}</strong><span>steps today</span></div>
+      @if (remainingToday() > 0) { <p class="left-copy"><b>{{ remainingToday() | number }}</b> steps left to hit your target</p> }
+      @else { <p class="left-copy reached">Daily target reached - nice work!</p> }
+    </div>
+    <div class="hero-ring">
+      <app-progress-ring [progress]="percent(goals()[0]) / 100" [size]="190" [stroke]="13" label="Daily step goal">
+        <strong class="ring-value">{{ percent(goals()[0]) }}%</strong>
+        <small>of {{ goals()[0].target | number }}</small>
+      </app-progress-ring>
+    </div>
+    <span class="hero-orbit orbit-one"></span><span class="hero-orbit orbit-two"></span>
+  </section>
+
+  <section class="weekly-section" aria-labelledby="weekly-title">
+    <div class="section-title"><div><p class="eyebrow">KEEP YOUR RHYTHM</p><h3 id="weekly-title">Weekly progress</h3></div>@if (busy()) { <span class="muted">Updating...</span> }</div>
+    <div class="goal-list">
+      @for (goal of goals().slice(1); track goal.id; let i = $index) {
+        <article class="goal-card" [class.violet]="i === 0" [class.amber]="i === 1">
+          <div class="goal-icon" aria-hidden="true">{{ i === 0 ? '↗' : '◷' }}</div>
+          <p class="eyebrow">{{ goal.id === 'workouts' ? 'MOVE OFTEN' : 'TIME WELL SPENT' }}</p>
+          <h4>{{ goal.label }}</h4>
+          <p class="count"><strong>{{ current(goal) | number }}</strong><span> / {{ goal.target | number }} {{ goal.unit }}</span></p>
+          <div class="track" role="progressbar" [attr.aria-valuenow]="percent(goal)" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="goal.label + ' progress'"><span [style.width.%]="percent(goal)"></span></div>
+          <small>{{ percent(goal) === 100 ? 'Target reached - well done!' : (goal.target - current(goal) | number) + ' ' + goal.unit + ' to go' }}</small>
+        </article>
+      }
+    </div>
+  </section>
+
+  <section class="panel week-panel" aria-labelledby="week-title">
+    <div class="section-head"><div><p class="eyebrow">A LITTLE EVERY DAY</p><h3 id="week-title">Your steps this week</h3><p>Daily target: {{ goals()[0].target | number }} steps</p></div><span class="legend"><i></i> Steps</span></div>
+    <div class="week-chart" role="img" aria-label="Steps for each of the last seven days">
+      @for (day of week(); track day.date) {
+        <div class="day" [class.today-day]="day.date === todaySteps().date"><div class="bar-wrap"><span class="bar" [style.height.%]="barHeight(day.steps)" [attr.title]="(day.steps | number) + ' steps'"></span></div><strong>{{ day.steps | number }}</strong><small>{{ day.label }}</small></div>
+      }
+    </div>
+  </section>
+
+  <details class="editor">
+    <summary><span><strong>Adjust your targets</strong><small>Personalize daily and weekly goals</small></span><span class="edit-mark" aria-hidden="true">+</span></summary>
+    <div class="edit-body">
+      @for (goal of goals(); track goal.id) {
+        <label class="edit-row"><span><strong>{{ goal.label }}</strong><small>{{ goal.unit }} - {{ goal.id === 'steps' ? 'per day' : 'per week' }}</small></span><input type="number" min="1" [(ngModel)]="goal.target" [name]="goal.id" [attr.aria-label]="goal.label + ' target'" /></label>
+      }
+      <button class="action" type="button" (click)="save()">Save targets</button>
+      @if (saved) { <p class="status" role="status">Goals saved on this device.</p> }
+    </div>
+  </details>
+</section>

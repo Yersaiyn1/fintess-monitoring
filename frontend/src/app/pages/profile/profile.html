@@ -1,0 +1,24 @@
+<section class="page">
+  <header><p class="eyebrow">ACCOUNT</p><h2>Profile</h2><p>Your account details.</p></header>
+  @if (auth.user(); as user) {
+    <div class="profile-card">
+      <div class="avatar" aria-hidden="true">{{ auth.initials() }}</div>
+      <form class="details" (ngSubmit)="save()">
+        <label>Full name<input [(ngModel)]="fullName" name="fullName" required maxlength="255" autocomplete="name" /></label>
+        <label>Email<input [(ngModel)]="email" name="email" type="email" required maxlength="255" autocomplete="email" /></label>
+        <label>Date of birth<input [value]="user.birthDate" readonly /></label>
+        <hr />
+        @if (!changingPassword) {
+          <button class="secondary" type="button" (click)="changingPassword = true">Change password</button>
+        } @else {
+          <h3>Change password</h3>
+          <label>Current password<input [(ngModel)]="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required /></label>
+          <label>New password<input [(ngModel)]="newPassword" name="newPassword" type="password" minlength="8" maxlength="64" autocomplete="new-password" required /></label>
+        }
+        <button class="action" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+        @if (error) { <p class="error" role="alert">{{ error }}</p> }
+        @if (message) { <p class="status" role="status">{{ message }}</p> }
+      </form>
+    </div>
+  } @else { <p class="empty">Profile information is unavailable.</p> }
+</section>

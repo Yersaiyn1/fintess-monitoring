@@ -31,7 +31,7 @@
             <span class="kind-dot" [attr.data-kind]="w.kind"></span>
             <span class="what"><strong>{{ w.kind }}</strong><span class="muted">{{ formatWhen(w.startedAt) }}</span></span>
             <span class="cell"><strong>{{ formatDuration(w.durationSec) }}</strong><span class="muted">time</span></span>
-            <span class="cell opt"><strong>{{ w.distanceKm | number: '1.2-2' }} km</strong><span class="muted">distance</span></span>
+            <span class="cell opt"><strong>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} {{ preferences.distanceUnitLabel() }}</strong><span class="muted">distance</span></span>
             <span class="cell opt"><strong>{{ w.caloriesKcal | number: '1.0-0' }} kcal</strong><span class="muted">calories</span></span>
             <span class="chev" aria-hidden="true">›</span>
           </a>

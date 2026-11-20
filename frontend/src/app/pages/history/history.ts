@@ -7,6 +7,7 @@ import { Workout, WorkoutKind } from '../../core/models/workout.model';
 import { WorkoutsApiService } from '../../core/services/api/workouts-api.service';
 import { formatDuration, formatWhen } from '../../core/utils/format';
 import { AnalyticsPanel } from './analytics-panel/analytics-panel';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 const PAGE_SIZE = 10;
 
@@ -20,6 +21,7 @@ const PAGE_SIZE = 10;
 })
 export class History {
   private readonly api = inject(WorkoutsApiService);
+  protected readonly preferences = inject(UserPreferencesService);
   private requestId = 0;
 
   protected readonly kinds: WorkoutKind[] = ['Run', 'Walk', 'Cycling', 'Strength', 'Yoga'];
