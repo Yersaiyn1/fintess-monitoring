@@ -10,13 +10,15 @@
   grid-template-columns: minmax(280px, 340px) 1fr;
   grid-template-areas:
     'hero  stats'
+    'import import'
     'weekly weekly'
     'recent recent';
 }
-.hero   { grid-area: hero; }
-.stats  { grid-area: stats; }
-.weekly { grid-area: weekly; }
-.recent { grid-area: recent; }
+.hero      { grid-area: hero; }
+.stats     { grid-area: stats; }
+.hc-import { grid-area: import; }
+.weekly    { grid-area: weekly; }
+.recent    { grid-area: recent; }
 
 /* Hero: the one dark, memorable block */
 .hero {
@@ -64,7 +66,7 @@ li {
 
 
 @media (max-width: 1100px) {
-  .grid { grid-template-columns: 1fr; grid-template-areas: 'hero' 'stats' 'weekly' 'recent'; }
+  .grid { grid-template-columns: 1fr; grid-template-areas: 'hero' 'stats' 'import' 'weekly' 'recent'; }
   .hero { grid-auto-flow: column; justify-content: space-around; align-items: center; padding: 24px; }
 }
 @media (max-width: 720px) {
@@ -92,3 +94,28 @@ li {
   background: var(--ink); color: #fff; font-weight: 500;
 }
 .empty { padding: 18px 0; border-bottom: 0; }
+
+.hc-import { padding: 18px 24px; }
+.hc-head {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  justify-content: space-between; align-items: center;
+}
+.hc-head h2 { font-size: 18px; margin-bottom: 4px; }
+.hc-head code { font-size: 12.5px; background: var(--chalk); padding: 2px 6px; border-radius: 6px; }
+.hc-btn {
+  border: 0; border-radius: 999px; padding: 9px 18px;
+  background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 600;
+  transition: filter 140ms, opacity 140ms;
+}
+.hc-btn:hover:not(:disabled) { filter: brightness(1.15); }
+.hc-btn:disabled { opacity: 0.55; cursor: wait; }
+.hc-status {
+  margin-top: 12px; padding: 10px 14px;
+  border-radius: var(--radius-md); border: 1px solid var(--line);
+  background: var(--chalk); color: var(--ink); font-size: 13.5px;
+}
+.hc-status.error { border-color: #e8b4ae; background: #fdf1ef; color: #a02f24; }
+.hc-status.success {
+  border-color: color-mix(in srgb, var(--mint) 45%, transparent);
+  background: color-mix(in srgb, var(--mint) 14%, transparent);
+}

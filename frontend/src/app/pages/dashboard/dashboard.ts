@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
+import { describeHttpError } from '../../core/http/error-message';
 import { WeeklyMetric } from '../../core/models/activity.model';
+import { HealthConnectUploadResponse, SyncApiService } from '../../core/services/api/sync-api.service';
 import { DashboardDataService } from '../../core/services/dashboard-data.service';
+import { WorkoutTrackerService } from '../../core/services/workout-tracker.service';
 import { BarChart, ChartBar } from '../../shared/bar-chart/bar-chart';
 import { ProgressRing } from '../../shared/progress-ring/progress-ring';
 import { StatCard } from '../../shared/stat-card/stat-card';
@@ -33,6 +37,10 @@ export class Dashboard {
   protected readonly workouts = this.data.recentWorkouts;
   protected readonly loading = this.data.loading;
   protected readonly error = this.data.error;
+
+  protected readonly isUploading = signal(false);
+  protected readonly uploadError = signal('');
+  protected readonly uploadResult = signal<HealthConnectUploadResponse | null>(null);
 
   constructor() {
     void this.data.load();
@@ -69,5 +77,36 @@ export class Dashboard {
 
   protected select(option: MetricOption): void {
     this.metric.set(option);
+  }
+
+  protected async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.zip') && !lower.endsWith('.db')) {
+      this.uploadError.set('Only .zip and .db Health Connect export files are supported.');
+      this.uploadResult.set(null);
+      if (input) input.value = '';
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadError.set('');
+    this.uploadResult.set(null);
+    try {
+      const res = await firstValueFrom(this.syncApi.uploadHealthConnectArchive(file));
+      this.uploadResult.set(res);
+      await this.data.load();
+      if (this.tracker.ready()) {
+        await this.tracker.init();
+      }
+    } catch (e) {
+      this.uploadError.set(describeHttpError(e, 'Could not import Health Connect data.'));
+    } finally {
+      this.isUploading.set(false);
+      if (input) input.value = '';
+    }
   }
 }
