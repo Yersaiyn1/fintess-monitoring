@@ -10,7 +10,7 @@ from app.services.analytics import build_analytics
 router = APIRouter()
 
 
-@router.get("/workouts", response_model=AnalyticsResponse, summary="Weekly or monthly workout analytics")
+@router.get("/workouts", response_model=AnalyticsResponse, summary="Weekly or monthly activity analytics")
 async def workout_analytics(
     period: Period = Query("week"),
     user: User = Depends(get_current_user),

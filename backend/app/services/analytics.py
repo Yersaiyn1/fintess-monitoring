@@ -1,14 +1,14 @@
-"""Weekly / monthly workout analytics (Phase 3)."""
-from collections import defaultdict
+"""Weekly and monthly activity analytics with workout breakdowns."""
+from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.analytics import AnalyticsDay, AnalyticsResponse, AnalyticsTotals, KindBreakdown
+from app.services.dashboard import build_daily_activity
 from app.services.workouts import aware, duration_seconds, finished_between
 
 PERIOD_DAYS = {"week": 7, "month": 30}
-_WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 
 async def build_analytics(
@@ -20,28 +20,24 @@ async def build_analytics(
     first_day = today - timedelta(days=n - 1)
     workouts = await finished_between(db, user_id, first_day, today)
 
-    per_day = defaultdict(lambda: {"workouts": 0, "sec": 0, "kcal": 0.0, "km": 0.0, "steps": 0})
+    activity = await build_daily_activity(db, user_id, first_day, today, workouts)
+    workout_counts = Counter(aware(w.started_at).date() for w in workouts)
     per_kind = defaultdict(lambda: {"workouts": 0, "sec": 0, "kcal": 0.0})
     for w in workouts:
         sec = duration_seconds(w) or 0
-        d = per_day[aware(w.started_at).date()]
-        d["workouts"] += 1; d["sec"] += sec; d["kcal"] += float(w.calories_kcal)
-        d["km"] += float(w.distance_km); d["steps"] += w.steps
         k = per_kind[w.kind]
         k["workouts"] += 1; k["sec"] += sec; k["kcal"] += float(w.calories_kcal)
 
     days: list[AnalyticsDay] = []
-    for i in range(n):
-        day = first_day + timedelta(days=i)
-        v = per_day.get(day, {"workouts": 0, "sec": 0, "kcal": 0.0, "km": 0.0, "steps": 0})
+    for day in activity:
         days.append(AnalyticsDay(
-            date=day,
-            label=_WEEKDAYS[day.weekday()] if period == "week" else str(day.day),
-            workouts=v["workouts"],
-            durationMin=round(v["sec"] / 60, 1),
-            caloriesKcal=round(v["kcal"], 1),
-            distanceKm=round(v["km"], 2),
-            steps=v["steps"],
+            date=day.date,
+            label=day.label if period == "week" else str(day.date.day),
+            workouts=workout_counts[day.date],
+            durationMin=day.activeMinutes,
+            caloriesKcal=day.calories,
+            distanceKm=day.distanceKm,
+            steps=day.steps,
         ))
 
     totals = AnalyticsTotals(
