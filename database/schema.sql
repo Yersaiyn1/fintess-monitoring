@@ -39,8 +39,15 @@ CREATE TABLE IF NOT EXISTS "Devices" (
     user_id        INTEGER       NOT NULL REFERENCES "Users"(user_id) ON DELETE RESTRICT,
     model          VARCHAR(255)  NOT NULL,
     serial_number  VARCHAR(255)  NOT NULL,
-    last_sync_time TIMESTAMPTZ
+    provider       VARCHAR(32)   NOT NULL DEFAULT 'manual',
+    is_active      BOOLEAN       NOT NULL DEFAULT TRUE,
+    last_sync_time TIMESTAMPTZ,
+    CONSTRAINT ck_devices_provider CHECK (provider IN ('manual', 'health_connect', 'bluetooth', 'fitbit', 'garmin', 'demo'))
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_active_user_provider_serial
+    ON "Devices" (user_id, provider, serial_number)
+    WHERE is_active = TRUE;
 
 -- ─────────────────────────────────────────
 -- Health_Readings

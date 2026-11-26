@@ -8,8 +8,8 @@ Website for monitoring health data from a fitness band. The band measures heart 
 - [x] User registration and login (JWT, bcrypt)
 - [x] Workout tracking: start / stop, timer, activity types (Phase 2)
 - [x] Workout history with filters, details and weekly / monthly analytics (Phase 3)
-- [ ] Add and manage fitness bands
-- [ ] Receive and save readings (heart rate, steps, calories, blood pressure)
+- [x] Connect and manage devices (manual, Web Bluetooth Heart Rate, Demo watch simulator)
+- [x] Receive and save readings (heart rate, steps, calories, blood pressure) via `POST /api/v1/sync/batch`
 - [ ] Dashboard with charts and reading history
 - [ ] User gives or removes access for a doctor
 - [ ] Doctor sees data only while access is active (read only)
@@ -42,6 +42,7 @@ Five main tables: `Users`, `Devices`, `Health_Readings`, `Doctors`, `Doctor_Acce
 
 Important rules:
 - `UNIQUE(device_id, date_time)` — no duplicate readings after re-sync.
+- `Devices.provider` (`manual`, `health_connect`, `bluetooth`, `fitbit`, `garmin`, `demo`) and `Devices.is_active` — `POST /api/v1/sync/devices/ensure` idempotently provisions one active device per `(user_id, provider, serial_number)` (e.g., `BLE-<user_id>`, `DEMO-<user_id>`).
 - `ON DELETE RESTRICT` — a device with readings cannot be deleted; devices are deactivated (`is_active = FALSE`).
 - Heart rate must be 30–220 bpm; steps and calories ≥ 0; dates are not in the future.
 - A doctor sees a user's data only if today is between `access_start` and `access_end`.

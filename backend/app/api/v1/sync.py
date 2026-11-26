@@ -1,5 +1,5 @@
 """
-Device sync endpoint.
+Device sync and registration endpoints.
 
 Security & correctness guarantees:
 - SELECT ... FOR UPDATE on Devices row prevents parallel-sync races.
@@ -10,17 +10,118 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
-from app.schemas.sync import SyncBatchRequest, SyncBatchResponse
+from app.models.user import User
+from app.schemas.sync import (
+    DeviceCreateRequest,
+    DeviceEnsureRequest,
+    DeviceResponse,
+    SyncBatchRequest,
+    SyncBatchResponse,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+_PROVIDER_SERIAL_PREFIX: dict[str, str] = {
+    "bluetooth": "BLE",
+    "demo": "DEMO",
+    "health_connect": "HEALTH_CONNECT",
+    "manual": "MANUAL",
+    "fitbit": "FITBIT",
+    "garmin": "GARMIN",
+}
+
+
+def _build_ensure_serial(provider: str, user_id: int) -> str:
+    prefix = _PROVIDER_SERIAL_PREFIX.get(provider, provider.upper())
+    return f"{prefix}-{user_id}".upper()
+
+
+@router.get("/devices", response_model=list[DeviceResponse])
+async def list_devices(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return active devices owned by the authenticated user."""
+    result = await db.execute(
+        select(Device)
+        .where(Device.user_id == user.user_id, Device.is_active.is_(True))
+        .order_by(Device.device_id.asc())
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/devices", response_model=DeviceResponse, status_code=status.HTTP_201_CREATED)
+async def create_device(
+    payload: DeviceCreateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Register a new device for the authenticated user."""
+    device = Device(
+        user_id=user.user_id,
+        model=payload.model,
+        serial_number=payload.serial_number,
+        provider=payload.provider,
+        is_active=True,
+    )
+    db.add(device)
+    await db.commit()
+    await db.refresh(device)
+    return device
+
+
+@router.post("/devices/ensure", response_model=DeviceResponse, status_code=status.HTTP_200_OK)
+async def ensure_device(
+    payload: DeviceEnsureRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Idempotently return or create the user's active device for a given provider."""
+    serial_number = _build_ensure_serial(payload.provider, user.user_id)
+    stmt = (
+        select(Device)
+        .where(
+            Device.user_id == user.user_id,
+            Device.provider == payload.provider,
+            Device.serial_number == serial_number,
+            Device.is_active.is_(True),
+        )
+        .with_for_update()
+    )
+
+    device = (await db.execute(stmt)).scalar_one_or_none()
+    if device is not None:
+        return device
+
+    device = Device(
+        user_id=user.user_id,
+        model=payload.name,
+        serial_number=serial_number,
+        provider=payload.provider,
+        is_active=True,
+    )
+    try:
+        async with db.begin_nested():
+            db.add(device)
+            await db.flush()
+    except IntegrityError:
+        existing = (await db.execute(stmt)).scalar_one()
+        return existing
+
+    await db.commit()
+    await db.refresh(device)
+    return device
 
 
 @router.post("/batch", response_model=SyncBatchResponse, status_code=status.HTTP_200_OK)
@@ -66,8 +167,10 @@ async def sync_batch(
             for r in payload.readings
         ]
 
+        dialect_name = (await db.connection()).dialect.name
+        insert_fn = sqlite_insert if dialect_name == "sqlite" else pg_insert
         stmt = (
-            pg_insert(HealthReading)
+            insert_fn(HealthReading)
             .values(rows)
             .on_conflict_do_nothing(index_elements=["device_id", "date_time"])
         )
