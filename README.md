@@ -14,7 +14,7 @@ Website for monitoring health data from a fitness band. The band measures heart 
 - [x] Dashboard with charts, reading history, and step-based calorie estimates (`caloriesEstimated` / `≈`) when measured calories are 0
 - [x] User gives or removes access for a doctor
 - [x] Doctor sees data only while access is active (read only)
-- [ ] Alert when average heart rate is above 100 bpm in the last 7 days
+- [x] Personalized health advice (deterministic rule engine + optional consented Anthropic LLM phrasing, server-persisted `User_Goals`, high-HR warning > 100 bpm)
 
 ## Tech stack
 | Part | Technology |
@@ -39,13 +39,14 @@ fitness-monitoring/
 ```
 
 ## Database
-Main tables: `Users`, `Devices`, `Health_Readings`, `Sleep_Sessions`, `Workouts`, `Doctors`, `Doctor_Access` (bridge table for the M:N relation Users–Doctors), `Access_Log`, and `rls_mismatch_log`.
+Main tables: `Users`, `Devices`, `Health_Readings`, `Sleep_Sessions`, `Workouts`, `User_Goals`, `Advice_Cache`, `Doctors`, `Doctor_Access` (bridge table for the M:N relation Users–Doctors), `Access_Log`, and `rls_mismatch_log`.
 
 Important rules:
 - `UNIQUE(device_id, date_time)` on `Health_Readings` — no duplicate readings after re-sync; Health Connect uploads merge non-null fields via `COALESCE` and keep the maximum `end_time`.
 - `Devices.provider` (`manual`, `health_connect`, `bluetooth`, `fitbit`, `garmin`, `demo`) and `Devices.is_active` keep Health Connect exports isolated from manual devices.
 - `ON DELETE RESTRICT` — a device with readings or sleep sessions cannot be deleted; devices are deactivated (`is_active = FALSE`).
 - Heart rate must be 30–220 bpm; SpO2 0–100%; steps and calories ≥ 0; `Health_Readings.end_time >= date_time`; `Sleep_Sessions` enforces `UNIQUE(device_id, start_time)` and `end_time > start_time`.
+- `User_Goals` stores per-user targets (`steps_daily` 1,000–100,000; `workouts_weekly` 0–14); `Users.ai_advice_consent` gates optional LLM phrasing and `Advice_Cache` caches AI responses per `(user_id, lang)`.
 - A doctor sees a user's data only if today is between `access_start` and `access_end`.
 
  
