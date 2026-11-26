@@ -13,6 +13,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.security import hash_password, create_access_token
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
@@ -74,6 +75,8 @@ async def seed_data(test_session_factory):
                 full_name="Dr. Smith",
                 specialty="Cardiology",
                 license_number="LIC-001",
+                email="doctor@example.com",
+                password_hash=hash_password("DoctorTest123"),
             )
             session.add(doctor)
             await session.flush()
@@ -125,10 +128,7 @@ async def test_expired_access_returns_403(test_client, test_session_factory, see
 
     response = await test_client.get(
         f"/api/v1/doctor/patients/{ids['user_id']}/readings",
-        headers={
-            "x-doctor-id": str(ids["doctor_id"]),
-            "x-user-id": str(ids["user_id"]),
-        },
+        headers={"Authorization": "Bearer " + create_access_token(ids["doctor_id"], role="doctor")},
     )
     assert response.status_code == 403, (
         f"Expected 403 for expired access, got {response.status_code}: {response.text}"
@@ -144,10 +144,7 @@ async def test_active_access_returns_200(test_client, test_session_factory, seed
 
     response = await test_client.get(
         f"/api/v1/doctor/patients/{ids['user_id']}/readings",
-        headers={
-            "x-doctor-id": str(ids["doctor_id"]),
-            "x-user-id": str(ids["user_id"]),
-        },
+        headers={"Authorization": "Bearer " + create_access_token(ids["doctor_id"], role="doctor")},
     )
     assert response.status_code == 200, (
         f"Expected 200 for active access, got {response.status_code}: {response.text}"
@@ -162,10 +159,7 @@ async def test_no_access_record_returns_403(test_client, seed_data):
 
     response = await test_client.get(
         f"/api/v1/doctor/patients/{ids['user_id']}/readings",
-        headers={
-            "x-doctor-id": str(ids["doctor_id"]),
-            "x-user-id": str(ids["user_id"]),
-        },
+        headers={"Authorization": "Bearer " + create_access_token(ids["doctor_id"], role="doctor")},
     )
     assert response.status_code == 403
 
@@ -183,11 +177,38 @@ async def test_expired_access_even_without_business_logic_filter(test_client, te
 
     response = await test_client.get(
         f"/api/v1/doctor/patients/{ids['user_id']}/readings",
-        headers={
-            "x-doctor-id": str(ids["doctor_id"]),
-            "x-user-id": str(ids["user_id"]),
-        },
+        headers={"Authorization": "Bearer " + create_access_token(ids["doctor_id"], role="doctor")},
     )
     assert response.status_code == 403, (
         "CRITICAL: Expired doctor access was not blocked by dependency!"
     )
+
+
+@pytest.mark.asyncio
+async def test_future_access_returns_403(test_client, test_session_factory, seed_data):
+    ids = seed_data
+    await create_access(test_session_factory, ids["user_id"], ids["doctor_id"], 1, 10)
+    response = await test_client.get(
+        f"/api/v1/doctor/patients/{ids['user_id']}/readings",
+        headers={"Authorization": "Bearer " + create_access_token(ids["doctor_id"], role="doctor")},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_patient_token_cannot_access_doctor_endpoint(test_client, test_session_factory, seed_data):
+    ids = seed_data
+    await create_access(test_session_factory, ids["user_id"], ids["doctor_id"], -5, 30)
+    response = await test_client.get(
+        f"/api/v1/doctor/patients/{ids['user_id']}/readings",
+        headers={"Authorization": "Bearer " + create_access_token(ids["user_id"], role="patient")},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_missing_token_returns_401(test_client, seed_data):
+    response = await test_client.get(
+        f"/api/v1/doctor/patients/{seed_data['user_id']}/readings"
+    )
+    assert response.status_code == 401
