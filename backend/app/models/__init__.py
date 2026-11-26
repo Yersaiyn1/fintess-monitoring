@@ -18,3 +18,4 @@ from app.models.workout import Workout  # noqa: F401
 
 # Phase 3 — History & Analytics:    (no new tables; index added by migration 0017)
 # Phase 4 — Goals & Settings:       (add goal / user_settings models here)
+from app.models.user_goal import UserGoal  # noqa: F401

@@ -168,3 +168,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_workouts_one_active_per_user ON "Workouts" 
 -- history / analytics queries (user + date range, optionally kind)
 CREATE INDEX IF NOT EXISTS idx_workouts_user_started      ON "Workouts" (user_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_workouts_user_kind_started ON "Workouts" (user_id, kind, started_at DESC);
+
+-- ─────────────────────────────────────────
+-- User_Goals  (migration 0019)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "User_Goals" (
+    user_id         INTEGER     PRIMARY KEY REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    steps_daily     INTEGER     NOT NULL DEFAULT 10000,
+    workouts_weekly INTEGER     NOT NULL DEFAULT 3,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT ck_user_goals_steps_daily CHECK (steps_daily BETWEEN 1000 AND 100000),
+    CONSTRAINT ck_user_goals_workouts_weekly CHECK (workouts_weekly BETWEEN 0 AND 14)
+);
