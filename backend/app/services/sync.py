@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,6 +45,7 @@ def _dedupe_rows(device_id: int, rows: list[dict]) -> list[dict]:
             by_dt[dt] = {
                 "device_id": device_id,
                 "date_time": dt,
+                "end_time": raw.get("end_time"),
                 "heart_rate_bpm": raw.get("heart_rate_bpm"),
                 "steps": raw.get("steps"),
                 "calories_kcal": raw.get("calories_kcal"),
@@ -55,6 +56,11 @@ def _dedupe_rows(device_id: int, rows: list[dict]) -> list[dict]:
             for col in _UPDATABLE_COLS:
                 if raw.get(col) is not None:
                     existing[col] = raw[col]
+            new_end = raw.get("end_time")
+            if new_end is not None:
+                cur_end = existing.get("end_time")
+                if cur_end is None or new_end > cur_end:
+                    existing["end_time"] = new_end
     return list(by_dt.values())
 
 
@@ -97,6 +103,13 @@ async def upsert_readings(
             col: func.coalesce(stmt.excluded[col], getattr(HealthReading, col))
             for col in _UPDATABLE_COLS
         }
+        end_time_expr = case(
+            (HealthReading.end_time.is_(None), stmt.excluded.end_time),
+            (stmt.excluded.end_time.is_(None), HealthReading.end_time),
+            (stmt.excluded.end_time > HealthReading.end_time, stmt.excluded.end_time),
+            else_=HealthReading.end_time,
+        )
+        set_map["end_time"] = end_time_expr
         where_clause = or_(
             *(getattr(HealthReading, col).is_distinct_from(expr) for col, expr in set_map.items())
         )

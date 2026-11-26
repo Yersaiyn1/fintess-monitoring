@@ -49,11 +49,13 @@ CREATE TABLE IF NOT EXISTS "Health_Readings" (
     reading_id     SERIAL PRIMARY KEY,
     device_id      INTEGER          NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
     date_time      TIMESTAMPTZ      NOT NULL,
+    end_time       TIMESTAMPTZ,
     heart_rate_bpm INTEGER          CHECK (heart_rate_bpm BETWEEN 30 AND 220),
     steps          INTEGER          CHECK (steps >= 0),
     calories_kcal  NUMERIC(8,2)     CHECK (calories_kcal >= 0),
     blood_pressure VARCHAR(20),
-    spo2_percent   DOUBLE PRECISION CHECK (spo2_percent BETWEEN 0 AND 100)
+    spo2_percent   DOUBLE PRECISION CHECK (spo2_percent BETWEEN 0 AND 100),
+    CONSTRAINT ck_health_readings_end_after_start CHECK (end_time IS NULL OR end_time >= date_time)
 );
 
 -- Deduplication rule (migration 0001): no duplicate readings after a re-sync

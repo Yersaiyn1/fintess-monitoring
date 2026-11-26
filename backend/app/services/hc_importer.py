@@ -42,6 +42,7 @@ def _ensure_reading(by_time: dict[datetime, dict], dt: datetime) -> dict:
     if reading is None:
         reading = {
             "date_time": dt,
+            "end_time": None,
             "steps": None,
             "heart_rate_bpm": None,
             "calories_kcal": None,
@@ -50,6 +51,18 @@ def _ensure_reading(by_time: dict[datetime, dict], dt: datetime) -> dict:
         }
         by_time[dt] = reading
     return reading
+
+
+def _merge_end_time(reading: dict, start_dt: datetime, end_ms: int | float | None) -> None:
+    """Keep the maximum valid interval end_time when merging records sharing start_dt."""
+    if end_ms is None:
+        return
+    end_dt = _ms_to_utc(end_ms)
+    if end_dt < start_dt:
+        return
+    existing = reading["end_time"]
+    if existing is None or end_dt > existing:
+        reading["end_time"] = end_dt
 
 
 def _bump(breakdown: dict[str, int], key: str) -> None:
@@ -123,16 +136,21 @@ def _parse_steps(
     cols = _get_columns(cur, table)
     if not {"start_time", "count"} <= cols:
         return
+    has_end = "end_time" in cols
+    select_cols = "start_time, count, end_time" if has_end else "start_time, count"
     rows = cur.execute(
-        f"SELECT start_time, count FROM {table} WHERE start_time IS NOT NULL AND count IS NOT NULL"
+        f"SELECT {select_cols} FROM {table} WHERE start_time IS NOT NULL AND count IS NOT NULL"
     ).fetchall()
-    for start_ms, count in rows:
+    for row in rows:
+        start_ms, count = row[0], row[1]
+        end_ms = row[2] if has_end else None
         steps_val = int(count)
         if steps_val < 0:
             continue
         dt = _ms_to_utc(start_ms)
         reading = _ensure_reading(by_time, dt)
         reading["steps"] = (reading["steps"] or 0) + steps_val
+        _merge_end_time(reading, dt, end_ms)
         _bump(breakdown, "steps")
 
 
@@ -175,16 +193,22 @@ def _parse_calories(
         ts_col = _resolve_ts_col(cols, ("start_time", "time"))
         if ts_col is None or "energy" not in cols:
             continue
+        has_end = "end_time" in cols
+        select_cols = f"{ts_col}, energy, end_time" if has_end else f"{ts_col}, energy"
         rows = cur.execute(
-            f"SELECT {ts_col}, energy FROM {table} WHERE {ts_col} IS NOT NULL AND energy IS NOT NULL"
+            f"SELECT {select_cols} FROM {table} WHERE {ts_col} IS NOT NULL AND energy IS NOT NULL"
         ).fetchall()
-        for ts_ms, energy in rows:
+        for row in rows:
+            ts_ms, energy = row[0], row[1]
+            end_ms = row[2] if has_end else None
             val = float(energy)
             if val < 0:
                 continue
             kcal = round(val / 1000.0, 2) if val > 10000.0 else round(val, 2)
-            reading = _ensure_reading(by_time, _ms_to_utc(ts_ms))
+            dt = _ms_to_utc(ts_ms)
+            reading = _ensure_reading(by_time, dt)
             reading["calories_kcal"] = round((reading["calories_kcal"] or 0.0) + kcal, 2)
+            _merge_end_time(reading, dt, end_ms)
             _bump(breakdown, "calories")
 
 

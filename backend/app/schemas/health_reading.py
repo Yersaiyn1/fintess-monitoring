@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class HealthReadingBase(BaseModel):
     device_id: int
     date_time: datetime
+    end_time: Optional[datetime] = None
     heart_rate_bpm: Optional[int] = None
     steps: Optional[int] = None
     calories_kcal: Optional[float] = None

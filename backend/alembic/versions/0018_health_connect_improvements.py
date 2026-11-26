@@ -1,4 +1,4 @@
-"""Health Connect improvements: SpO2 and Sleep_Sessions
+"""Health Connect improvements: SpO2, Sleep_Sessions, end_time
 
 Revision ID: 0018
 Revises: 0017
@@ -24,6 +24,21 @@ def upgrade() -> None:
             ) THEN
                 ALTER TABLE "Health_Readings"
                 ADD CONSTRAINT ck_health_readings_spo2 CHECK (spo2_percent BETWEEN 0 AND 100);
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        ALTER TABLE "Health_Readings"
+        ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'ck_health_readings_end_after_start'
+            ) THEN
+                ALTER TABLE "Health_Readings"
+                ADD CONSTRAINT ck_health_readings_end_after_start
+                CHECK (end_time IS NULL OR end_time >= date_time);
             END IF;
         END $$;
     """)
@@ -55,5 +70,7 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute('DROP TABLE IF EXISTS "Sleep_Sessions"')
+    op.execute('ALTER TABLE "Health_Readings" DROP CONSTRAINT IF EXISTS ck_health_readings_end_after_start')
+    op.execute('ALTER TABLE "Health_Readings" DROP COLUMN IF EXISTS end_time')
     op.execute('ALTER TABLE "Health_Readings" DROP CONSTRAINT IF EXISTS ck_health_readings_spo2')
     op.execute('ALTER TABLE "Health_Readings" DROP COLUMN IF EXISTS spo2_percent')
