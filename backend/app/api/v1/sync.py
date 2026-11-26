@@ -10,10 +10,9 @@ import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
@@ -104,24 +103,26 @@ async def ensure_device(
     if device is not None:
         return device
 
-    device = Device(
-        user_id=user.user_id,
-        model=payload.name,
-        serial_number=serial_number,
-        provider=payload.provider,
-        is_active=True,
+    dialect_name = (await db.connection()).dialect.name
+    insert_fn = sqlite_insert if dialect_name == "sqlite" else pg_insert
+    active_where = text("is_active = 1") if dialect_name == "sqlite" else text("is_active = TRUE")
+    insert_stmt = (
+        insert_fn(Device)
+        .values(
+            user_id=user.user_id,
+            model=payload.name,
+            serial_number=serial_number,
+            provider=payload.provider,
+            is_active=True,
+        )
+        .on_conflict_do_nothing(
+            index_elements=["user_id", "provider", "serial_number"],
+            index_where=active_where,
+        )
     )
-    try:
-        async with db.begin_nested():
-            db.add(device)
-            await db.flush()
-    except IntegrityError:
-        existing = (await db.execute(stmt)).scalar_one()
-        return existing
-
+    await db.execute(insert_stmt)
     await db.commit()
-    await db.refresh(device)
-    return device
+    return (await db.execute(stmt)).scalar_one()
 
 
 @router.post("/batch", response_model=SyncBatchResponse, status_code=status.HTTP_200_OK)

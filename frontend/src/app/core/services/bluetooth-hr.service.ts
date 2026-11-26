@@ -101,12 +101,15 @@ export class BluetoothHrService {
   };
 
   constructor() {
+    let wasLoggedIn = this.auth.isLoggedIn();
     effect(() => {
-      if (!this.auth.isLoggedIn()) {
+      const loggedIn = this.auth.isLoggedIn();
+      if (wasLoggedIn && !loggedIn) {
         untracked(() => {
           void this.disconnect();
         });
       }
+      wasLoggedIn = loggedIn;
     });
   }
 
