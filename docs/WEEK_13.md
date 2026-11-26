@@ -23,5 +23,6 @@ Both new endpoints require patient authentication and use the existing devices a
 
 - In dark mode, check the Profile avatar and Save changes button, Add Device fields, the Dashboard import button, and manually typed and autofilled login credentials.
 - In Goals, check seven date labels and compare a day with zero steps and a day with recorded steps. The plot uses a fixed-height grid area so percentage-based bars have a height to resolve against.
+- In Goals, open **Adjust your targets** and check that **Save targets** and the expand/collapse icon are readable in both themes.
 - At phone widths, check that the Profile avatar stays circular, workout timestamps wrap within their rows, and both date filters can open a native date picker and display a selected value.
 - Enter a reading and cancel, then open the form again and verify the measurements are cleared. Save a new reading and verify it appears in History. Cancel deletion, then confirm it and verify the entry disappears and remains absent after reload.
