@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     # Comma-separated list of origins that may call the API from a browser.
     CORS_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"
 
+    # Health Connect upload limits
+    MAX_UPLOAD_MB: int = 50
+    MAX_UNPACKED_MB: int = 300
+    MAX_HC_RECORDS: int = 500_000
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

@@ -5,12 +5,15 @@ from datetime import datetime, timezone
 import io
 import logging
 import os
+from pathlib import Path
 import sqlite3
 import tempfile
 import zipfile
 
+from app.core.config import settings
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
+_UNPACK_CHUNK_SIZE = 64 * 1024
 logger = logging.getLogger(__name__)
 
 
@@ -69,8 +72,29 @@ def _bump(breakdown: dict[str, int], key: str) -> None:
     breakdown[key] = breakdown.get(key, 0) + 1
 
 
-def _extract_db_file(data: bytes, filename: str, tmpdir: str) -> str:
-    """Locate or materialize the SQLite .db file inside `tmpdir`."""
+class _RecordBudget:
+    """Tracks parsed record rows and rejects exports exceeding `max_records`."""
+
+    def __init__(self, max_records: int) -> None:
+        self.max_records = max_records
+        self.count = 0
+
+    def consume(self) -> None:
+        self.count += 1
+        if self.count > self.max_records:
+            raise ValueError(
+                f"Export exceeds the maximum allowed limit of {self.max_records:,} records."
+            )
+
+
+def _extract_db_file(
+    data: bytes,
+    filename: str,
+    tmpdir: str,
+    max_unpacked_bytes: int | None = None,
+) -> str:
+    """Locate or materialize the SQLite .db file inside `tmpdir` with strict size checks."""
+    limit = max_unpacked_bytes if max_unpacked_bytes is not None else settings.MAX_UNPACKED_MB * 1024 * 1024
     lower_name = filename.lower()
     if zipfile.is_zipfile(io.BytesIO(data)):
         with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
@@ -81,19 +105,48 @@ def _extract_db_file(data: bytes, filename: str, tmpdir: str) -> str:
             ]
             if not db_members:
                 raise ValueError("No .db file found inside the ZIP archive.")
-            preferred = next(
-                (m for m in db_members if os.path.basename(m.filename).lower() == "health_connect_export.db"),
-                db_members[0],
-            )
+            if len(db_members) > 1:
+                preferred_matches = [
+                    m
+                    for m in db_members
+                    if os.path.basename(m.filename).lower() == "health_connect_export.db"
+                ]
+                if len(preferred_matches) == 1:
+                    preferred = preferred_matches[0]
+                    logger.warning(
+                        "Multiple .db files found in ZIP archive (%s); selecting preferred '%s'.",
+                        ", ".join(m.filename for m in db_members),
+                        preferred.filename,
+                    )
+                else:
+                    raise ValueError("Ambiguous ZIP archive: multiple .db files found.")
+            else:
+                preferred = db_members[0]
+
+            if preferred.file_size > limit:
+                raise ValueError("Archive is too large when unpacked.")
+
+            # Always write to a fixed safe filename inside tmpdir, never trusting archive paths.
             db_path = os.path.join(tmpdir, "health_connect_export.db")
+            written = 0
             with zf.open(preferred, "r") as src, open(db_path, "wb") as dst:
-                dst.write(src.read())
+                while chunk := src.read(_UNPACK_CHUNK_SIZE):
+                    written += len(chunk)
+                    if written > limit:
+                        raise ValueError("Archive is too large when unpacked.")
+                    dst.write(chunk)
+
+            with open(db_path, "rb") as f:
+                if not f.read(len(SQLITE_MAGIC)).startswith(SQLITE_MAGIC):
+                    raise ValueError("Invalid or corrupted SQLite .db file.")
             return db_path
 
     if lower_name.endswith(".zip"):
         raise ValueError("Invalid or corrupted ZIP archive.")
 
     if data.startswith(SQLITE_MAGIC) or lower_name.endswith(".db"):
+        if len(data) > limit:
+            raise ValueError("Archive is too large when unpacked.")
         if not data.startswith(SQLITE_MAGIC):
             raise ValueError("Invalid or corrupted SQLite .db file.")
         db_path = os.path.join(tmpdir, "upload.db")
@@ -128,7 +181,11 @@ def _extract_device_model(cur: sqlite3.Cursor, existing_tables: set[str]) -> str
 
 
 def _parse_steps(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    by_time: dict[datetime, dict],
+    breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     table = "steps_record_table"
     if table not in existing_tables:
@@ -147,6 +204,7 @@ def _parse_steps(
         steps_val = int(count)
         if steps_val < 0:
             continue
+        budget.consume()
         dt = _ms_to_utc(start_ms)
         reading = _ensure_reading(by_time, dt)
         reading["steps"] = (reading["steps"] or 0) + steps_val
@@ -155,7 +213,11 @@ def _parse_steps(
 
 
 def _parse_heart_rate(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    by_time: dict[datetime, dict],
+    breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     sources = (
         ("heart_rate_record_series_table", ("epoch_millis", "time", "start_time")),
@@ -178,13 +240,18 @@ def _parse_heart_rate(
             # Matches HealthReading CheckConstraint("heart_rate_bpm BETWEEN 30 AND 220")
             if not (30 <= bpm_int <= 220):
                 continue
+            budget.consume()
             reading = _ensure_reading(by_time, _ms_to_utc(ts_ms))
             reading["heart_rate_bpm"] = bpm_int
             _bump(breakdown, "heart_rate")
 
 
 def _parse_calories(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    by_time: dict[datetime, dict],
+    breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     for table in ("active_calories_burned_record_table", "total_calories_burned_record_table"):
         if table not in existing_tables:
@@ -204,6 +271,7 @@ def _parse_calories(
             val = float(energy)
             if val < 0:
                 continue
+            budget.consume()
             kcal = round(val / 1000.0, 2) if val > 10000.0 else round(val, 2)
             dt = _ms_to_utc(ts_ms)
             reading = _ensure_reading(by_time, dt)
@@ -213,7 +281,11 @@ def _parse_calories(
 
 
 def _parse_blood_pressure(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    by_time: dict[datetime, dict],
+    breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     table = "blood_pressure_record_table"
     if table not in existing_tables:
@@ -230,13 +302,18 @@ def _parse_blood_pressure(
         sys_i, dia_i = int(round(float(sys_v))), int(round(float(dia_v)))
         if sys_i <= 0 or dia_i <= 0:
             continue
+        budget.consume()
         reading = _ensure_reading(by_time, _ms_to_utc(ts_ms))
         reading["blood_pressure"] = f"{sys_i}/{dia_i}"[:20]
         _bump(breakdown, "blood_pressure")
 
 
 def _parse_spo2(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    by_time: dict[datetime, dict],
+    breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     table = "oxygen_saturation_record_table"
     if table not in existing_tables:
@@ -253,6 +330,7 @@ def _parse_spo2(
         # Matches HealthReading CheckConstraint("spo2_percent BETWEEN 0 AND 100")
         if not (0.0 <= pct_val <= 100.0):
             continue
+        budget.consume()
         reading = _ensure_reading(by_time, _ms_to_utc(ts_ms))
         reading["spo2_percent"] = round(pct_val, 2)
         _bump(breakdown, "spo2")
@@ -263,6 +341,7 @@ def _parse_sleep(
     existing_tables: set[str],
     sleep_by_start: dict[datetime, datetime],
     breakdown: dict[str, int],
+    budget: _RecordBudget,
 ) -> None:
     table = "sleep_session_record_table"
     if table not in existing_tables:
@@ -285,6 +364,7 @@ def _parse_sleep(
         end_dt = _ms_to_utc(end_ms)
         if end_dt <= start_dt:
             continue
+        budget.consume()
         existing_end = sleep_by_start.get(start_dt)
         if existing_end is None or end_dt > existing_end:
             sleep_by_start[start_dt] = end_dt
@@ -292,15 +372,29 @@ def _parse_sleep(
         breakdown["sleep"] = len(sleep_by_start)
 
 
-def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthConnectData:
+def parse_health_connect_bytes(
+    data: bytes,
+    filename: str = "",
+    *,
+    max_unpacked_bytes: int | None = None,
+    max_records: int | None = None,
+) -> ParsedHealthConnectData:
     """Parse an uploaded Health Connect .zip or .db payload into HealthReading dictionaries."""
     if not data:
         raise ValueError("Uploaded file is empty.")
 
+    unpacked_limit = (
+        max_unpacked_bytes
+        if max_unpacked_bytes is not None
+        else settings.MAX_UNPACKED_MB * 1024 * 1024
+    )
+    record_limit = max_records if max_records is not None else settings.MAX_HC_RECORDS
+
     with tempfile.TemporaryDirectory() as tmpdir:
-        db_path = _extract_db_file(data, filename, tmpdir)
+        db_path = _extract_db_file(data, filename, tmpdir, max_unpacked_bytes=unpacked_limit)
+        sqlite_uri = Path(db_path).resolve().as_uri() + "?mode=ro"
         # Explicitly close sqlite3.Connection before TemporaryDirectory cleanup (required on Windows).
-        with closing(sqlite3.connect(db_path)) as conn:
+        with closing(sqlite3.connect(sqlite_uri, uri=True)) as conn:
             cur = conn.cursor()
             existing_tables = {
                 row[0]
@@ -310,13 +404,14 @@ def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthC
             by_time: dict[datetime, dict] = {}
             sleep_by_start: dict[datetime, datetime] = {}
             breakdown: dict[str, int] = {}
+            budget = _RecordBudget(record_limit)
 
-            _parse_steps(cur, existing_tables, by_time, breakdown)
-            _parse_heart_rate(cur, existing_tables, by_time, breakdown)
-            _parse_calories(cur, existing_tables, by_time, breakdown)
-            _parse_blood_pressure(cur, existing_tables, by_time, breakdown)
-            _parse_spo2(cur, existing_tables, by_time, breakdown)
-            _parse_sleep(cur, existing_tables, sleep_by_start, breakdown)
+            _parse_steps(cur, existing_tables, by_time, breakdown, budget)
+            _parse_heart_rate(cur, existing_tables, by_time, breakdown, budget)
+            _parse_calories(cur, existing_tables, by_time, breakdown, budget)
+            _parse_blood_pressure(cur, existing_tables, by_time, breakdown, budget)
+            _parse_spo2(cur, existing_tables, by_time, breakdown, budget)
+            _parse_sleep(cur, existing_tables, sleep_by_start, breakdown, budget)
 
     readings = sorted(by_time.values(), key=lambda r: r["date_time"])
     sleep_sessions = [

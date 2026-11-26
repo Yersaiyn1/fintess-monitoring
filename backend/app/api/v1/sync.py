@@ -18,6 +18,7 @@ from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
@@ -29,6 +30,7 @@ from app.services.sync import upsert_readings, upsert_sleep_sessions
 logger = logging.getLogger(__name__)
 router = APIRouter()
 HC_BATCH_SIZE = 500
+_UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MiB
 
 
 class DeviceCreateRequest(BaseModel):
@@ -239,7 +241,17 @@ async def upload_health_connect(
             detail="Only .zip and .db files are supported.",
         )
 
-    raw_bytes = await file.read()
+    max_upload_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
+    chunks = bytearray()
+    while chunk := await file.read(_UPLOAD_CHUNK_SIZE):
+        if len(chunks) + len(chunk) > max_upload_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"Uploaded file exceeds the {settings.MAX_UPLOAD_MB} MB limit.",
+            )
+        chunks.extend(chunk)
+
+    raw_bytes = bytes(chunks)
     if not raw_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -247,7 +259,12 @@ async def upload_health_connect(
         )
 
     try:
-        parsed = parse_health_connect_bytes(raw_bytes, filename=filename)
+        parsed = parse_health_connect_bytes(
+            raw_bytes,
+            filename=filename,
+            max_unpacked_bytes=settings.MAX_UNPACKED_MB * 1024 * 1024,
+            max_records=settings.MAX_HC_RECORDS,
+        )
     except (ValueError, sqlite3.Error, zipfile.BadZipFile) as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
