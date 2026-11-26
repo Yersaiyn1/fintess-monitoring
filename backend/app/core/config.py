@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     MAX_UNPACKED_MB: int = 300
     MAX_HC_RECORDS: int = 500_000
 
+    # Optional LLM layer for personalized advice (disabled by default)
+    ADVICE_LLM_ENABLED: bool = False
+    ADVICE_LLM_API_KEY: str = ""
+    ADVICE_LLM_MODEL: str = "claude-3-5-haiku-latest"
+    ADVICE_LLM_TIMEOUT_S: float = 10.0
+    ADVICE_CACHE_TTL_MIN: int = 360
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

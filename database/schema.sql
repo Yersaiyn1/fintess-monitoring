@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS "Users" (
     birth_date        DATE          NOT NULL,
     email             VARCHAR(255)  NOT NULL UNIQUE,
     registration_date DATE          NOT NULL DEFAULT CURRENT_DATE,
-    password_hash     VARCHAR(255)  -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    password_hash     VARCHAR(255), -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    ai_advice_consent BOOLEAN       NOT NULL DEFAULT FALSE
 );
 
 -- ─────────────────────────────────────────
@@ -179,4 +180,17 @@ CREATE TABLE IF NOT EXISTS "User_Goals" (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT ck_user_goals_steps_daily CHECK (steps_daily BETWEEN 1000 AND 100000),
     CONSTRAINT ck_user_goals_workouts_weekly CHECK (workouts_weekly BETWEEN 0 AND 14)
+);
+
+-- ─────────────────────────────────────────
+-- Advice_Cache  (migration 0019)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Advice_Cache" (
+    user_id         INTEGER     NOT NULL REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    lang            VARCHAR(10) NOT NULL,
+    metrics_hash    VARCHAR(64) NOT NULL,
+    payload         JSONB       NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_refresh_at TIMESTAMPTZ,
+    CONSTRAINT pk_advice_cache PRIMARY KEY (user_id, lang)
 );

@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Date
+from sqlalchemy import Boolean, Date, Integer, String, false
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -17,3 +17,6 @@ class User(Base):
     )
     # bcrypt hash (see app/core/security.py). NULL = account without a password (cannot log in).
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    ai_advice_consent: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )

@@ -1,4 +1,4 @@
-"""Personal advice and user goals: User_Goals table
+"""Personal advice and user goals: User_Goals, Users.ai_advice_consent, Advice_Cache
 
 Revision ID: 0019
 Revises: 0018
@@ -14,6 +14,11 @@ depends_on = None
 
 def upgrade() -> None:
     op.execute("""
+        ALTER TABLE "Users"
+        ADD COLUMN IF NOT EXISTS ai_advice_consent BOOLEAN NOT NULL DEFAULT FALSE
+    """)
+
+    op.execute("""
         CREATE TABLE IF NOT EXISTS "User_Goals" (
             user_id         INTEGER     PRIMARY KEY REFERENCES "Users"(user_id) ON DELETE CASCADE,
             steps_daily     INTEGER     NOT NULL DEFAULT 10000,
@@ -25,13 +30,28 @@ def upgrade() -> None:
     """)
 
     op.execute("""
+        CREATE TABLE IF NOT EXISTS "Advice_Cache" (
+            user_id         INTEGER     NOT NULL REFERENCES "Users"(user_id) ON DELETE CASCADE,
+            lang            VARCHAR(10) NOT NULL,
+            metrics_hash    VARCHAR(64) NOT NULL,
+            payload         JSONB       NOT NULL,
+            created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+            last_refresh_at TIMESTAMPTZ,
+            CONSTRAINT pk_advice_cache PRIMARY KEY (user_id, lang)
+        )
+    """)
+
+    op.execute("""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_user') THEN
                 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "User_Goals" TO app_user;
+                GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "Advice_Cache" TO app_user;
             END IF;
         END $$;
     """)
 
 
 def downgrade() -> None:
+    op.execute('DROP TABLE IF EXISTS "Advice_Cache"')
     op.execute('DROP TABLE IF EXISTS "User_Goals"')
+    op.execute('ALTER TABLE "Users" DROP COLUMN IF EXISTS ai_advice_consent')
