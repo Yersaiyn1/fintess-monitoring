@@ -9,9 +9,9 @@
   </div>
 
   <div class="actions">
-    <button type="button" class="icon-btn" aria-label="Notifications">
+    <a class="icon-btn" routerLink="/notifications" aria-label="Notifications">
       <app-icon name="bell" [size]="20" />
-    </button>
+    </a>
     <a class="user" routerLink="/profile" aria-label="Open profile">
       <span class="avatar" aria-hidden="true">{{ auth.initials() }}</span>
       <span class="who">{{ auth.user()?.fullName }}</span>

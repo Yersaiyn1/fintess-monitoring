@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS "Doctor_Access" (
     doctor_id    INTEGER  NOT NULL REFERENCES "Doctors"(doctor_id) ON DELETE CASCADE,
     access_start DATE     NOT NULL,
     access_end   DATE     NOT NULL,
+    reminder_read_for DATE,
     CONSTRAINT pk_doctor_access PRIMARY KEY (user_id, doctor_id),
     CONSTRAINT chk_doctor_access_dates CHECK (access_end >= access_start)
 );

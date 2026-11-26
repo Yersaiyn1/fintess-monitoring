@@ -1,0 +1,7 @@
+section { max-width: 48rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(16px, 4vw, 32px); }
+header, article { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+header { margin-bottom: 20px; }
+article { padding: 16px 0; border-top: 1px solid var(--line); }
+p, span { color: var(--ink-muted); }
+b { font-size: .85rem; }
+button { background: var(--surface); border: 1px solid var(--line); padding: 8px 12px; border-radius: var(--radius-sm); }
