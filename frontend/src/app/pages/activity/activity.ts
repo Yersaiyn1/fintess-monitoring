@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { DashboardDataService } from '../../core/services/dashboard-data.service';
@@ -12,7 +13,7 @@ import { UserPreferencesService } from '../../core/services/user-preferences.ser
 
 @Component({
   selector: 'app-activity',
-  imports: [DecimalPipe, FormsModule, StatCard],
+  imports: [DecimalPipe, FormsModule, RouterLink, StatCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './activity.html',
   styleUrl: './activity.scss',
@@ -37,6 +38,8 @@ export class Activity {
   protected bloodPressure = '';
   protected syncMessage = '';
   protected syncError = '';
+  protected readonly enteringReading = signal(false);
+  protected readonly savingReading = signal(false);
 
   constructor() {
     void this.tracker.init();
@@ -69,13 +72,29 @@ export class Activity {
     }
   }
 
+  protected cancelReading(): void {
+    this.resetReading();
+    this.syncError = '';
+    this.syncMessage = '';
+  }
+
+  private resetReading(): void {
+    this.heartRate = null;
+    this.steps = null;
+    this.calories = null;
+    this.bloodPressure = '';
+    this.enteringReading.set(false);
+  }
+
   protected async saveReading(): Promise<void> {
+    if (this.savingReading()) return;
     this.syncError = '';
     this.syncMessage = '';
     if (!this.selectedDeviceId) {
       this.syncError = 'Add or select a device first.';
       return;
     }
+    this.savingReading.set(true);
     try {
       await firstValueFrom(this.syncApi.createReading({
         device_id: this.selectedDeviceId,
@@ -85,10 +104,13 @@ export class Activity {
         calories_kcal: this.calories,
         blood_pressure: this.bloodPressure || null,
       }));
-      this.syncMessage = 'Reading saved to PostgreSQL.';
+      this.resetReading();
+      this.syncMessage = 'Reading saved.';
       await this.dashboard.load();
     } catch {
       this.syncError = 'Could not save the reading.';
+    } finally {
+      this.savingReading.set(false);
     }
   }
 }

@@ -18,6 +18,21 @@ export interface HealthConnectUploadResponse {
   metrics_breakdown: Record<string, number>;
 }
 
+export interface DeviceReading {
+  reading_id: number;
+  device_model: string;
+  date_time: string;
+  heart_rate_bpm: number | null;
+  steps: number | null;
+  calories_kcal: number | null;
+  blood_pressure: string | null;
+}
+
+export interface DeviceReadingPage {
+  items: DeviceReading[];
+  has_more: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SyncApiService {
   private readonly http = inject(HttpClient);
@@ -49,5 +64,13 @@ export class SyncApiService {
     blood_pressure: string | null;
   }): Observable<{ reading_id: number; status: string }> {
     return this.http.post<{ reading_id: number; status: string }>(`${this.url}/reading`, body);
+  }
+
+  readings(offset: number): Observable<DeviceReadingPage> {
+    return this.http.get<DeviceReadingPage>(`${this.url}/readings`, { params: { offset } });
+  }
+
+  deleteReading(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/readings/${id}`);
   }
 }

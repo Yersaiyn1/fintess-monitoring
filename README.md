@@ -141,6 +141,8 @@ Browser (Angular, :4200) --/api/v1/*--> ng serve proxy --> FastAPI (:8000) --SQL
 Login returns a JWT; the browser sends it as `Authorization: Bearer ...` on every API call, and the
 backend returns only the data of that user. **Adding a new phase:** see [docs/ADDING_A_PHASE.md](docs/ADDING_A_PHASE.md).
 
+For device reading entry, history, and deletion, see [Week 13 improvements](docs/WEEK_13.md).
+
 ## Doctor applications and administrator access
 
 1. From the project root, prepare the backend:

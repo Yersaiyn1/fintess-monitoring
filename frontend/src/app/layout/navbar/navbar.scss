@@ -22,8 +22,8 @@
 }
 .user:hover { background: color-mix(in srgb, var(--mint) 16%, var(--surface)); border-color: var(--mint); }
 .avatar {
-  width: 34px; height: 34px; display: grid; place-items: center;
-  border-radius: 50%; background: var(--cobalt); color: #fff; font-size: 13px; font-weight: 600;
+  width: 34px; height: 34px; flex: none; display: grid; place-items: center;
+  border-radius: 50%; background: var(--cobalt); color: var(--surface); font-size: 13px; font-weight: 600;
 }
 .who { font-weight: 500; font-size: 14px; }
 .logout {

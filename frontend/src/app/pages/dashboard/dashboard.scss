@@ -104,7 +104,7 @@ li {
 .hc-head code { font-size: 12.5px; background: var(--chalk); padding: 2px 6px; border-radius: 6px; }
 .hc-btn {
   border: 0; border-radius: 999px; padding: 9px 18px;
-  background: var(--ink); color: #fff; font-size: 13.5px; font-weight: 600;
+  background: var(--ink); color: var(--surface); font-size: 13.5px; font-weight: 600;
   transition: filter 140ms, opacity 140ms;
 }
 .hc-btn:hover:not(:disabled) { filter: brightness(1.15); }
