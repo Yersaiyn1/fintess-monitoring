@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { describeHttpError } from '../../core/http/error-message';
@@ -10,6 +10,7 @@ import { BarChart, ChartBar } from '../../shared/bar-chart/bar-chart';
 import { ProgressRing } from '../../shared/progress-ring/progress-ring';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { AdvicePanel } from './advice-panel/advice-panel';
 
 interface MetricOption {
   key: WeeklyMetric;
@@ -20,7 +21,7 @@ interface MetricOption {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DecimalPipe, StatCard, ProgressRing, BarChart],
+  imports: [DecimalPipe, StatCard, ProgressRing, BarChart, AdvicePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -30,6 +31,7 @@ export class Dashboard {
   private readonly preferences = inject(UserPreferencesService);
   private readonly syncApi = inject(SyncApiService);
   private readonly tracker = inject(WorkoutTrackerService);
+  private readonly advicePanel = viewChild(AdvicePanel);
 
   protected readonly today = this.data.today;
   protected readonly goal = this.data.dailyStepGoal;
@@ -106,6 +108,7 @@ export class Dashboard {
       const res = await firstValueFrom(this.syncApi.uploadHealthConnectArchive(file));
       this.uploadResult.set(res);
       await this.data.load();
+      void this.advicePanel()?.load();
       if (this.tracker.ready()) {
         await this.tracker.init();
       }
