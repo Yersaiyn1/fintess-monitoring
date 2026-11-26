@@ -176,14 +176,14 @@
   gap: 10px;
 }
 .reading-form {
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
 }
 .sync input,
 .sync select {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--chalk);
   padding: 11px 12px;
   color: var(--ink);
 }
@@ -193,8 +193,10 @@
   color: #101a1c;
   padding: 10px 14px;
 }
+.sync .cancel { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.history-link { justify-self: start; color: var(--cobalt); text-decoration: underline; }
 .sync-message {
-  color: #18794e;
+  color: var(--ink);
   font-size: 14px;
 }
 .saved {

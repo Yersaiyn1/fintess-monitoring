@@ -29,7 +29,7 @@
         <li>
           <a class="row" [routerLink]="['/history', w.id]" [attr.aria-label]="w.kind + ', ' + formatWhen(w.startedAt) + ', open details'">
             <span class="kind-dot" [attr.data-kind]="w.kind"></span>
-            <span class="what"><strong>{{ w.kind }}</strong><span class="muted">{{ formatWhen(w.startedAt) }}</span></span>
+            <span class="what"><strong>{{ w.kind }}</strong><time class="muted workout-date" [attr.datetime]="w.startedAt">{{ formatWhen(w.startedAt) }}</time></span>
             <span class="cell"><strong>{{ formatDuration(w.durationSec) }}</strong><span class="muted">time</span></span>
             <span class="cell opt"><strong>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} {{ preferences.distanceUnitLabel() }}</strong><span class="muted">distance</span></span>
             <span class="cell opt"><strong>{{ w.caloriesKcal | number: '1.0-0' }} kcal</strong><span class="muted">calories</span></span>
@@ -48,6 +48,45 @@
     @if (loading()) { <p class="muted center">Loading…</p> }
     @if (hasMore() && !loading()) {
       <button type="button" class="more" (click)="loadMore()">Show more ({{ total() - items().length }} left)</button>
+    }
+  </section>
+
+  <section class="panel" id="device-readings" aria-labelledby="readings-title">
+    <div class="head"><h2 id="readings-title">Device readings</h2></div>
+    @if (readingsError()) {
+      <p class="error" role="alert">{{ readingsError() }} <button type="button" class="link" (click)="loadReadings()">Reload readings</button></p>
+    }
+    @if (readingsStatus()) { <p class="muted" role="status">{{ readingsStatus() }}</p> }
+    <ul class="list">
+      @for (reading of readings(); track reading.reading_id) {
+        <li class="reading">
+          <div>
+            <strong>{{ reading.device_model }}</strong>
+            <time class="muted reading-date" [attr.datetime]="reading.date_time">{{ reading.date_time | date:'medium' }}</time>
+            <ul class="reading-metrics list">
+              @if (reading.heart_rate_bpm !== null) { <li>{{ reading.heart_rate_bpm | number }} bpm</li> }
+              @if (reading.steps !== null) { <li>{{ reading.steps | number }} steps</li> }
+              @if (reading.calories_kcal !== null) { <li>{{ reading.calories_kcal | number }} kcal</li> }
+              @if (reading.blood_pressure) { <li>Blood pressure {{ reading.blood_pressure }}</li> }
+            </ul>
+          </div>
+          @if (confirmingReading() === reading.reading_id) {
+            <div class="reading-actions">
+              <span>Delete this reading?</span>
+              <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="deleteReading(reading.reading_id)">Confirm delete</button>
+              <button type="button" class="reading-button" [disabled]="deletingReading()" (click)="confirmingReading.set(null)">Cancel</button>
+            </div>
+          } @else {
+            <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="confirmingReading.set(reading.reading_id)">Delete reading</button>
+          }
+        </li>
+      } @empty {
+        @if (!readingsLoading() && !readingsError()) { <li class="empty muted">No saved device readings.</li> }
+      }
+    </ul>
+    @if (readingsLoading()) { <p class="muted center" role="status">Loading readings…</p> }
+    @if (moreReadings() && !readingsLoading()) {
+      <button type="button" class="more" [disabled]="deletingReading()" (click)="loadReadings(true)">Show more readings</button>
     }
   </section>
 </div>

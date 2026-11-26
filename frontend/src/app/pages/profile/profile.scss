@@ -3,8 +3,8 @@ header p { color: var(--ink-muted); margin-top: 8px; }
 header h2 { font-size: 28px; }
 .eyebrow { color: var(--ink-soft); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
 .profile-card { display: flex; align-items: flex-start; gap: 24px; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); }
-.avatar { display: grid; place-items: center; flex: 0 0 64px; height: 64px; border-radius: 50%; background: var(--ink); color: white; font-size: 20px; font-weight: 700; }
-.details { display: grid; gap: 14px; width: min(100%, 460px); }
+.avatar { display: grid; place-items: center; flex: none; width: 64px; height: 64px; border-radius: 50%; background: var(--ink); color: var(--surface); font-size: 20px; font-weight: 700; }
+.details { display: grid; gap: 14px; width: min(100%, 460px); min-width: 0; }
 .details label { display: grid; gap: 7px; color: var(--ink-muted); font-size: 14px; }
 .details input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); }
 .details input[readonly] { opacity: .7; }
@@ -12,7 +12,7 @@ header h2 { font-size: 28px; }
 .details h3 { font-size: 18px; }
 .hint, .status { color: var(--ink-muted); }
 .error { color: var(--coral, #c43d4b); }
-.action { justify-self: start; padding: 11px 20px; border: 0; border-radius: 999px; background: var(--ink); color: white; cursor: pointer; }
+.action { justify-self: start; padding: 11px 20px; border: 0; border-radius: 999px; background: var(--ink); color: var(--surface); cursor: pointer; }
 .secondary { justify-self: start; padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); cursor: pointer; }
 .action:disabled { opacity: .6; cursor: wait; }
 .field, .empty { color: var(--ink-muted); }

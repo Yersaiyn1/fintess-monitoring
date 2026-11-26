@@ -26,7 +26,7 @@ form { display: grid; gap: 16px; }
 
 .control {
   display: flex; align-items: center;
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md);
 }
 .control:focus-within { border-color: var(--cobalt); box-shadow: var(--focus); }
 .control.invalid { border-color: var(--coral); }
@@ -34,6 +34,11 @@ form { display: grid; gap: 16px; }
 .control input {
   flex: 1; min-width: 0; font: inherit; color: var(--ink);
   padding: 12px 14px; background: transparent; border: 0; outline: none;
+}
+.control input:autofill {
+  -webkit-text-fill-color: var(--ink);
+  box-shadow: inset 0 0 0 1000px var(--surface);
+  border-radius: var(--radius-md);
 }
 
 .toggle {
@@ -50,7 +55,7 @@ form { display: grid; gap: 16px; }
 }
 
 .submit {
-  background: var(--ink); color: #fff; border: 0;
+  background: var(--ink); color: var(--surface); border: 0;
   border-radius: var(--radius-md); padding: 13px 16px; font-weight: 600;
 }
 .submit:hover:not(:disabled) { background: var(--ink-soft); }

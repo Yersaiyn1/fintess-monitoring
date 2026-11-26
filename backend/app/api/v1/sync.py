@@ -11,10 +11,10 @@ import sqlite3
 import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.api.deps import get_current_user
@@ -49,6 +49,70 @@ class ReadingCreateRequest(BaseModel):
     steps: int | None = Field(default=None, ge=0)
     calories_kcal: float | None = Field(default=None, ge=0)
     blood_pressure: str | None = Field(default=None, max_length=20)
+
+
+class ReadingResponse(BaseModel):
+    reading_id: int
+    device_model: str
+    date_time: datetime
+    heart_rate_bpm: int | None
+    steps: int | None
+    calories_kcal: float | None
+    blood_pressure: str | None
+
+
+class ReadingPage(BaseModel):
+    items: list[ReadingResponse]
+    has_more: bool
+
+
+@router.get("/readings", response_model=ReadingPage)
+async def list_readings(
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(
+            HealthReading.reading_id,
+            Device.model.label("device_model"),
+            HealthReading.date_time,
+            HealthReading.heart_rate_bpm,
+            HealthReading.steps,
+            HealthReading.calories_kcal,
+            HealthReading.blood_pressure,
+        )
+        .join(Device, HealthReading.device_id == Device.device_id)
+        .where(Device.user_id == user.user_id)
+        .order_by(HealthReading.date_time.desc(), HealthReading.reading_id.desc())
+        .offset(offset)
+        .limit(limit + 1)
+    )
+    rows = result.mappings().all()
+    return {"items": rows[:limit], "has_more": len(rows) > limit}
+
+
+@router.delete("/readings/{reading_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_reading(
+    reading_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        delete(HealthReading)
+        .where(
+            HealthReading.reading_id == reading_id,
+            HealthReading.device_id.in_(
+                select(Device.device_id).where(Device.user_id == user.user_id)
+            ),
+        )
+        .returning(HealthReading.reading_id)
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/devices", response_model=list[DeviceResponse])
