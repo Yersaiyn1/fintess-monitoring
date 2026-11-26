@@ -8,11 +8,12 @@ Website for monitoring health data from a fitness band. The band measures heart 
 - [x] User registration and login (JWT, bcrypt)
 - [x] Workout tracking: start / stop, timer, activity types (Phase 2)
 - [x] Workout history with filters, details and weekly / monthly analytics (Phase 3)
-- [ ] Add and manage fitness bands
-- [ ] Receive and save readings (heart rate, steps, calories, blood pressure)
-- [ ] Dashboard with charts and reading history
-- [ ] User gives or removes access for a doctor
-- [ ] Doctor sees data only while access is active (read only)
+- [x] Add and manage fitness bands (`Devices` with `provider` and `is_active`)
+- [x] Receive and save readings (`heart_rate_bpm`, `steps`, `calories_kcal`, `blood_pressure`, `spo2_percent`, `end_time`) and `Sleep_Sessions`
+- [x] Android Health Connect import (`.zip` / `.db`) with COALESCE upsert, upload size & zip-bomb limits, and read-only SQLite parsing
+- [x] Dashboard with charts, reading history, and step-based calorie estimates (`caloriesEstimated` / `≈`) when measured calories are 0
+- [x] User gives or removes access for a doctor
+- [x] Doctor sees data only while access is active (read only)
 - [ ] Alert when average heart rate is above 100 bpm in the last 7 days
 
 ## Tech stack
@@ -38,12 +39,13 @@ fitness-monitoring/
 ```
 
 ## Database
-Five main tables: `Users`, `Devices`, `Health_Readings`, `Doctors`, `Doctor_Access` (bridge table for the M:N relation Users–Doctors), plus `Device_Models`.
+Main tables: `Users`, `Devices`, `Health_Readings`, `Sleep_Sessions`, `Workouts`, `Doctors`, `Doctor_Access` (bridge table for the M:N relation Users–Doctors), `Access_Log`, and `rls_mismatch_log`.
 
 Important rules:
-- `UNIQUE(device_id, date_time)` — no duplicate readings after re-sync.
-- `ON DELETE RESTRICT` — a device with readings cannot be deleted; devices are deactivated (`is_active = FALSE`).
-- Heart rate must be 30–220 bpm; steps and calories ≥ 0; dates are not in the future.
+- `UNIQUE(device_id, date_time)` on `Health_Readings` — no duplicate readings after re-sync; Health Connect uploads merge non-null fields via `COALESCE` and keep the maximum `end_time`.
+- `Devices.provider` (`manual`, `health_connect`, `bluetooth`, `fitbit`, `garmin`, `demo`) and `Devices.is_active` keep Health Connect exports isolated from manual devices.
+- `ON DELETE RESTRICT` — a device with readings or sleep sessions cannot be deleted; devices are deactivated (`is_active = FALSE`).
+- Heart rate must be 30–220 bpm; SpO2 0–100%; steps and calories ≥ 0; `Health_Readings.end_time >= date_time`; `Sleep_Sessions` enforces `UNIQUE(device_id, start_time)` and `end_time > start_time`.
 - A doctor sees a user's data only if today is between `access_start` and `access_end`.
 
  

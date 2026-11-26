@@ -16,6 +16,69 @@ SQLITE_MAGIC = b"SQLite format 3\x00"
 _UNPACK_CHUNK_SIZE = 64 * 1024
 logger = logging.getLogger(__name__)
 
+# Tables and columns expected by the importer (used for warnings and inspect_hc_export.py).
+EXPECTED_HC_TABLES: dict[str, dict[str, tuple[str, ...]]] = {
+    "device_info_table": {
+        "required": (),
+        "ts_candidates": (),
+        "optional": ("display_name", "manufacturer", "model"),
+    },
+    "steps_record_table": {
+        "required": ("start_time", "count"),
+        "ts_candidates": (),
+        "optional": ("end_time",),
+    },
+    "heart_rate_record_series_table": {
+        "required": ("beats_per_minute",),
+        "ts_candidates": ("epoch_millis", "time", "start_time"),
+        "optional": (),
+    },
+    "heart_rate_record_table": {
+        "required": ("beats_per_minute",),
+        "ts_candidates": ("start_time", "time", "epoch_millis"),
+        "optional": (),
+    },
+    "resting_heart_rate_record_table": {
+        "required": ("beats_per_minute",),
+        "ts_candidates": ("time", "start_time", "epoch_millis"),
+        "optional": (),
+    },
+    "active_calories_burned_record_table": {
+        "required": ("energy",),
+        "ts_candidates": ("start_time", "time"),
+        "optional": ("end_time",),
+    },
+    "total_calories_burned_record_table": {
+        "required": ("energy",),
+        "ts_candidates": ("start_time", "time"),
+        "optional": ("end_time",),
+    },
+    "blood_pressure_record_table": {
+        "required": ("systolic", "diastolic"),
+        "ts_candidates": ("time", "start_time"),
+        "optional": (),
+    },
+    "oxygen_saturation_record_table": {
+        "required": ("percentage",),
+        "ts_candidates": ("time", "start_time"),
+        "optional": (),
+    },
+    "sleep_session_record_table": {
+        "required": ("start_time", "end_time"),
+        "ts_candidates": (),
+        "optional": (),
+    },
+}
+
+
+def _warn_missing_columns(table: str, cols: set[str], missing: list[str]) -> None:
+    logger.warning(
+        "Health Connect table '%s' is missing expected column(s): %s (available: %s)",
+        table,
+        ", ".join(missing),
+        ", ".join(sorted(cols)),
+    )
+
 
 @dataclass
 class ParsedHealthConnectData:
@@ -158,13 +221,15 @@ def _extract_db_file(
 
 
 def _extract_device_model(cur: sqlite3.Cursor, existing_tables: set[str]) -> str:
-    if "device_info_table" not in existing_tables:
+    table = "device_info_table"
+    if table not in existing_tables:
         return "Android Health Connect"
-    cols = _get_columns(cur, "device_info_table")
+    cols = _get_columns(cur, table)
     select_cols = [c for c in ("display_name", "manufacturer", "model") if c in cols]
     if not select_cols:
+        _warn_missing_columns(table, cols, ["display_name|manufacturer|model"])
         return "Android Health Connect"
-    rows = cur.execute(f'SELECT {", ".join(select_cols)} FROM device_info_table').fetchall()
+    rows = cur.execute(f'SELECT {", ".join(select_cols)} FROM {table}').fetchall()
     for row in rows:
         data = dict(zip(select_cols, row))
         display_name = (data.get("display_name") or "").strip()
@@ -191,9 +256,13 @@ def _parse_steps(
     if table not in existing_tables:
         return
     cols = _get_columns(cur, table)
-    if not {"start_time", "count"} <= cols:
+    missing = [c for c in ("start_time", "count") if c not in cols]
+    if missing:
+        _warn_missing_columns(table, cols, missing)
         return
     has_end = "end_time" in cols
+    if not has_end:
+        _warn_missing_columns(table, cols, ["end_time"])
     select_cols = "start_time, count, end_time" if has_end else "start_time, count"
     rows = cur.execute(
         f"SELECT {select_cols} FROM {table} WHERE start_time IS NOT NULL AND count IS NOT NULL"
@@ -229,7 +298,13 @@ def _parse_heart_rate(
             continue
         cols = _get_columns(cur, table)
         ts_col = _resolve_ts_col(cols, ts_candidates)
-        if ts_col is None or "beats_per_minute" not in cols:
+        missing = []
+        if ts_col is None:
+            missing.append(f"timestamp ({'/'.join(ts_candidates)})")
+        if "beats_per_minute" not in cols:
+            missing.append("beats_per_minute")
+        if missing:
+            _warn_missing_columns(table, cols, missing)
             continue
         rows = cur.execute(
             f"SELECT {ts_col}, beats_per_minute FROM {table} "
@@ -258,9 +333,17 @@ def _parse_calories(
             continue
         cols = _get_columns(cur, table)
         ts_col = _resolve_ts_col(cols, ("start_time", "time"))
-        if ts_col is None or "energy" not in cols:
+        missing = []
+        if ts_col is None:
+            missing.append("timestamp (start_time/time)")
+        if "energy" not in cols:
+            missing.append("energy")
+        if missing:
+            _warn_missing_columns(table, cols, missing)
             continue
         has_end = "end_time" in cols
+        if not has_end:
+            _warn_missing_columns(table, cols, ["end_time"])
         select_cols = f"{ts_col}, energy, end_time" if has_end else f"{ts_col}, energy"
         rows = cur.execute(
             f"SELECT {select_cols} FROM {table} WHERE {ts_col} IS NOT NULL AND energy IS NOT NULL"
@@ -292,7 +375,14 @@ def _parse_blood_pressure(
         return
     cols = _get_columns(cur, table)
     ts_col = _resolve_ts_col(cols, ("time", "start_time"))
-    if ts_col is None or not {"systolic", "diastolic"} <= cols:
+    missing = []
+    if ts_col is None:
+        missing.append("timestamp (time/start_time)")
+    for req in ("systolic", "diastolic"):
+        if req not in cols:
+            missing.append(req)
+    if missing:
+        _warn_missing_columns(table, cols, missing)
         return
     rows = cur.execute(
         f"SELECT {ts_col}, systolic, diastolic FROM {table} "
@@ -320,7 +410,13 @@ def _parse_spo2(
         return
     cols = _get_columns(cur, table)
     ts_col = _resolve_ts_col(cols, ("time", "start_time"))
-    if ts_col is None or "percentage" not in cols:
+    missing = []
+    if ts_col is None:
+        missing.append("timestamp (time/start_time)")
+    if "percentage" not in cols:
+        missing.append("percentage")
+    if missing:
+        _warn_missing_columns(table, cols, missing)
         return
     rows = cur.execute(
         f"SELECT {ts_col}, percentage FROM {table} WHERE {ts_col} IS NOT NULL AND percentage IS NOT NULL"
@@ -349,12 +445,7 @@ def _parse_sleep(
     cols = _get_columns(cur, table)
     missing = [c for c in ("start_time", "end_time") if c not in cols]
     if missing:
-        logger.warning(
-            "Health Connect table '%s' is missing expected column(s): %s (available: %s)",
-            table,
-            ", ".join(missing),
-            ", ".join(sorted(cols)),
-        )
+        _warn_missing_columns(table, cols, missing)
         return
     rows = cur.execute(
         f"SELECT start_time, end_time FROM {table} WHERE start_time IS NOT NULL AND end_time IS NOT NULL"
