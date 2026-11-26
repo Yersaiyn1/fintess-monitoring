@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { Shell } from './layout/shell/shell';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { adminGuard, doctorGuard, guestGuard, patientGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -16,9 +16,26 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/auth/register/register').then((m) => m.Register),
   },
   {
+    path: 'doctor-apply',
+    title: 'Apply as a doctor',
+    loadComponent: () => import('./pages/doctor-application/doctor-application').then((m) => m.DoctorApplicationPage),
+  },
+  {
+    path: 'admin',
+    title: 'Doctor applications',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin/admin').then((m) => m.Admin),
+  },
+  {
+    path: 'doctor',
+    title: 'Doctor portal',
+    canActivate: [doctorGuard],
+    loadComponent: () => import('./pages/doctor-home/doctor-home').then((m) => m.DoctorHome),
+  },
+  {
     path: '',
     component: Shell,
-    canActivate: [authGuard],
+    canActivate: [patientGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {

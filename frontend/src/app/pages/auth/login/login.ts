@@ -23,6 +23,7 @@ export class Login {
   protected readonly showPassword = signal(false);
   protected readonly submitting = signal(false);
   protected readonly serverError = signal('');
+  protected readonly role = signal<'patient' | 'doctor'>('patient');
 
   protected error(name: 'email' | 'password'): string {
     const c = this.form.controls[name];
@@ -37,9 +38,11 @@ export class Login {
     }
     this.submitting.set(true);
     const { email, password } = this.form.getRawValue();
-    const result = await this.auth.login(email, password);
+    const result = this.role() === 'doctor'
+      ? await this.auth.loginDoctor(email, password)
+      : await this.auth.login(email, password);
     this.submitting.set(false);
-    if (result.ok) await this.router.navigateByUrl('/dashboard');
+    if (result.ok) await this.router.navigateByUrl(result.role === 'doctor' ? '/doctor' : result.role === 'admin' ? '/admin' : '/dashboard');
     else this.serverError.set(result.error);
   }
 }

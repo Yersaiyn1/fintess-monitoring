@@ -14,6 +14,7 @@ from app.models.rls_mismatch_log import RlsMismatchLog  # noqa: F401
 
 # Phase 2 — Activity Tracking
 from app.models.workout import Workout  # noqa: F401
+from app.models.doctor_application import DoctorApplication  # noqa: F401
 
 # Phase 3 — History & Analytics:    (no new tables; index added by migration 0017)
 # Phase 4 — Goals & Settings:       (add goal / user_settings models here)

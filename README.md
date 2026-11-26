@@ -5,6 +5,7 @@ Website for monitoring health data from a fitness band. The band measures heart 
 > University team project, KBTU — Information Systems.
 
 ## Features (MVP)
+
 - [x] User registration and login (JWT, bcrypt)
 - [x] Workout tracking: start / stop, timer, activity types (Phase 2)
 - [x] Workout history with filters, details and weekly / monthly analytics (Phase 3)
@@ -16,14 +17,16 @@ Website for monitoring health data from a fitness band. The band measures heart 
 - [ ] Alert when average heart rate is above 100 bpm in the last 7 days
 
 ## Tech stack
-| Part | Technology |
-|------|------------|
-| Backend | Python, FastAPI |
-| Database | PostgreSQL |
-| Frontend | Angular|
-| Tests | pytest |
+
+| Part     | Technology      |
+| -------- | --------------- |
+| Backend  | Python, FastAPI |
+| Database | PostgreSQL      |
+| Frontend | Angular         |
+| Tests    | pytest          |
 
 ## Project structure
+
 ```
 fitness-monitoring/
 ├── backend/        # FastAPI API (app/, tests/, requirements.txt)
@@ -38,17 +41,18 @@ fitness-monitoring/
 ```
 
 ## Database
+
 Five main tables: `Users`, `Devices`, `Health_Readings`, `Doctors`, `Doctor_Access` (bridge table for the M:N relation Users–Doctors), plus `Device_Models`.
 
 Important rules:
+
 - `UNIQUE(device_id, date_time)` — no duplicate readings after re-sync.
 - `ON DELETE RESTRICT` — a device with readings cannot be deleted; devices are deactivated (`is_active = FALSE`).
 - Heart rate must be 30–220 bpm; steps and calories ≥ 0; dates are not in the future.
 - A doctor sees a user's data only if today is between `access_start` and `access_end`.
 
- 
-
 ### Create the database (one command)
+
 The database itself is NOT stored in git (PostgreSQL data files are machine-specific). What is stored
 is the **recipe**: Alembic migrations (`backend/alembic`) + demo data (`database/seed.sql`).
 Every teammate builds an identical database on their own PostgreSQL with one command:
@@ -57,12 +61,14 @@ Every teammate builds an identical database on their own PostgreSQL with one com
 cd backend
 python scripts/setup_db.py --seed     # creates DB "fitness" if missing, applies migrations, loads demo data
 ```
+
 It reads `DATABASE_URL` from `.env`, so everybody keeps their own PostgreSQL password locally
 (`.env` is in `.gitignore` and is never pushed). Safe to re-run any time.
 Manual alternative: `createdb fitness`, then `alembic upgrade head`, then `psql -d fitness -f database/seed.sql`.
 `database/schema.sql` is a readable snapshot of the same schema (for the ERD / reading).
 
 ## How to run
+
 You need PostgreSQL 14+, **64-bit** Python 3.12-3.14 and Node.js 20.19+ / 22.12+. Three terminals (Windows PowerShell):
 
 ```powershell
@@ -82,12 +88,24 @@ cd frontend
 npm install
 npm start
 ```
+
 Demo login (after `seed.sql`): `alice@example.com` / `Demo1234`. Or just register a new account.
+Admin: demo.admin@example.com / PulseAdmin2026!
+Doctor: demo.doctor@example.com / PulseDoctor2026!
+
+Doctor accounts are provisioned by an administrator (there is no public doctor self-signup). After applying migrations, run this from `backend/`:
+
+```powershell
+python scripts/provision_doctor.py --name "Dr. Ada Smith" --license-number LIC-123 --specialty Cardiology
+```
+
+The script asks for the doctor's email and temporary password without putting the password in shell history. Doctor login is available at `POST /api/v1/auth/doctor/login`; doctor API access requires that role-scoped bearer token and an active patient permission.
 
 Check that everything is connected: open http://localhost:8000/health/db — it must answer `{"status":"ok","database":"up"}`.
 
 ### Troubleshooting
-* **`link.exe not found` / `Failed building wheel for pydantic-core, asyncpg, greenlet ...`** — pip is trying to
+
+- **`link.exe not found` / `Failed building wheel for pydantic-core, asyncpg, greenlet ...`** — pip is trying to
   compile packages because it found no ready-made build. Use 64-bit Python 3.12-3.14 (`python -c "import struct; print(struct.calcsize('P')*8)"`
   must print 64) and recreate the environment with a fresh pip:
   ```powershell
@@ -100,33 +118,56 @@ Check that everything is connected: open http://localhost:8000/health/db — it 
   pip install -r requirements.txt
   ```
   You do NOT need Visual Studio / Rust. (`psycopg2-binary` is only for `scripts/deduplicate_health_readings.py`: `pip install -r requirements-scripts.txt`.)
-* **`database "fitness" does not exist`** — run `python scripts/setup_db.py` (it creates the database).
-* **`password authentication failed`** — the password in `DATABASE_URL` (`.env` in the project root) is not your PostgreSQL password.
-* **`/health/db` answers 503** — PostgreSQL is not running or `DATABASE_URL` in `.env` is wrong.
-* **Registration / login shows "The database schema is out of date"** — run `alembic upgrade head` in `backend/` and restart the backend.
-* **Registration / login shows "Server error. Make sure the backend is running"** — the backend (uvicorn, port 8000) is not running, or it crashed: look at its terminal.
-* **Login page says "Cannot reach the server"** — start the backend first (port 8000) and run the frontend with `npm start` (not plain `ng serve`).
+- **`database "fitness" does not exist`** — run `python scripts/setup_db.py` (it creates the database).
+- **`password authentication failed`** — the password in `DATABASE_URL` (`.env` in the project root) is not your PostgreSQL password.
+- **`/health/db` answers 503** — PostgreSQL is not running or `DATABASE_URL` in `.env` is wrong.
+- **Registration / login shows "The database schema is out of date"** — run `alembic upgrade head` in `backend/` and restart the backend.
+- **Registration / login shows "Server error. Make sure the backend is running"** — the backend (uvicorn, port 8000) is not running, or it crashed: look at its terminal.
+- **Login page says "Cannot reach the server"** — start the backend first (port 8000) and run the frontend with `npm start` (not plain `ng serve`).
 
 ### Tests
+
 ```powershell
 cd backend;  pytest          # API + database logic
 cd frontend; npm test        # Angular unit tests
 ```
 
 ## How the parts talk to each other
+
 ```
 Browser (Angular, :4200) --/api/v1/*--> ng serve proxy --> FastAPI (:8000) --SQLAlchemy/asyncpg--> PostgreSQL (:5432)
 ```
+
 Login returns a JWT; the browser sends it as `Authorization: Bearer ...` on every API call, and the
 backend returns only the data of that user. **Adding a new phase:** see [docs/ADDING_A_PHASE.md](docs/ADDING_A_PHASE.md).
 
+## Doctor applications and administrator access
+
+1. From the project root, prepare the backend:
+   ```powershell
+   cd backend
+   .venv\Scripts\python.exe -m pip install -r requirements.txt
+   .venv\Scripts\python.exe -m alembic upgrade head
+   ```
+2. Create a normal patient account for the administrator, then grant it admin rights from `backend/`:
+   ```powershell
+   .venv\Scripts\python.exe scripts\promote_admin.py --email admin@example.com
+   ```
+3. That user continues to select **Patient** at login; the API recognizes the database admin flag and opens `/admin`.
+4. Applicants select **Doctor** on the login screen, open **Apply as a doctor**, and submit their license details, password, and verification files. Files are restricted to PDF/PNG/JPEG and stored under `backend/private/doctor-applications/`, outside the served frontend. They are not tracked by Git.
+5. The admin reviews the queue and files, then approves or rejects. Approval creates the doctor row with the applicant's password hash; the applicant can then use **Doctor** login.
+
+The application flow requires database migration `0019` and the `python-multipart` dependency. Protect and back up the private documents directory in deployment, and define an appropriate retention period for rejected applications before using this with real identity documents.
+
 ## Team workflow
+
 1. Take an Issue and create a branch: `feature/short-name`.
 2. Make small commits with clear messages.
 3. Open a Pull Request to `main`; at least one teammate reviews it.
 4. Do not push directly to `main`.
 
 ## Team
+
 - Yersaiyn Tolegen (24B032066)
 - Bashlanov Alexandr (24B030288)
 - Tolegen Akhmet (24B032065)

@@ -15,6 +15,10 @@
 h1 { font-size: 28px; }
 .lead { color: var(--ink-muted); margin-top: 4px; }
 
+.role-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--chalk); }
+.role-switch button { min-height: 42px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-muted); font-weight: 600; }
+.role-switch button.selected { background: var(--surface); color: var(--ink); box-shadow: 0 1px 4px rgba(16, 26, 28, .12); }
+
 form { display: grid; gap: 16px; }
 
 .field { display: grid; gap: 6px; }
@@ -53,6 +57,7 @@ form { display: grid; gap: 16px; }
 .submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .switch { text-align: center; color: var(--ink-muted); font-size: 14px; }
+.doctor-note { line-height: 1.45; }
 .switch a { color: var(--cobalt); font-weight: 600; }
 .switch a:hover { text-decoration: underline; }
 

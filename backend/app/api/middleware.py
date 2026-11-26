@@ -6,40 +6,14 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.db.session import AsyncSessionLocal
 from app.models.access_log import AccessLog
+from app.core.security import decode_access_token
 import logging
-import sqlalchemy as sa
 
 
 logger = logging.getLogger(__name__)
 
 DOCTOR_ENDPOINT_PREFIX = "/api/v1/doctor"
 
-
-class ContextSetterMiddleware(BaseHTTPMiddleware):
-    """Set session variables for user/doctor on each request.
-    Works with any PgBouncer pool mode because we use `SET LOCAL` which
-    applies only to the current transaction.
-    """
-    async def dispatch(self, request: Request, call_next) -> Response:
-        # Extract IDs from custom headers (adjust as your auth mechanism).
-        user_id = request.headers.get("x-user-id")
-        doctor_id = request.headers.get("x-doctor-id")
-        if not user_id and not doctor_id:
-            # Normal browser requests (JWT auth) carry no context headers:
-            # do not open a database connection for them.
-            return await call_next(request)
-        # Set context variables if PostgreSQL session is active
-        try:
-            async with AsyncSessionLocal() as session:
-                if user_id:
-                    await session.execute(sa.text(f"SET LOCAL app.current_user_id = '{int(user_id)}'"))
-                if doctor_id:
-                    await session.execute(sa.text(f"SET LOCAL app.current_doctor_id = '{int(doctor_id)}'"))
-                await session.commit()
-        except Exception as exc:
-            logger.debug("Context setter skipped (e.g. SQLite test environment): %s", exc)
-        response = await call_next(request)
-        return response
 
 class DoctorAccessLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
@@ -49,16 +23,18 @@ class DoctorAccessLogMiddleware(BaseHTTPMiddleware):
         if not request.url.path.startswith(DOCTOR_ENDPOINT_PREFIX):
             return response
 
-        doctor_id_str = request.headers.get("x-doctor-id")
-        user_id_str = request.headers.get("x-user-id")
-
-        if not doctor_id_str or not user_id_str:
+        authorization = request.headers.get("authorization", "")
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token:
+            return response
+        try:
+            doctor_id = decode_access_token(token, expected_role="doctor")
+            path_parts = request.url.path.strip("/").split("/")
+            user_id = int(path_parts[4]) if len(path_parts) == 6 and path_parts[:4] == ["api", "v1", "doctor", "patients"] and path_parts[5] == "readings" else None
+        except (ValueError, IndexError):
             return response
 
-        try:
-            doctor_id = int(doctor_id_str)
-            user_id = int(user_id_str)
-        except ValueError:
+        if doctor_id is None or user_id is None:
             return response
 
         result_str = "GRANTED" if response.status_code < 400 else "DENIED"

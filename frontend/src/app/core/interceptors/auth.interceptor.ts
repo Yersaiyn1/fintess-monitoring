@@ -18,7 +18,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = auth.token();
   const authorized = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
-  const isAuthCall = req.url.startsWith(`${base}/auth/login`) || req.url.startsWith(`${base}/auth/register`);
+  const isAuthCall = req.url.startsWith(`${base}/auth/login`) || req.url.startsWith(`${base}/auth/register`) || req.url.startsWith(`${base}/auth/doctor/login`);
 
   return next(authorized).pipe(
     catchError((error: unknown) => {

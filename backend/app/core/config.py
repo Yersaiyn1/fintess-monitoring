@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     # Comma-separated list of origins that may call the API from a browser.
     CORS_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"
+    DOCTOR_APPLICATIONS_DIR: Path = _BACKEND_DIR / "private" / "doctor-applications"
 
     @property
     def cors_origins_list(self) -> list[str]:

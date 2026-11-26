@@ -30,20 +30,24 @@ def verify_password(password: str, password_hash: str | None) -> bool:
         return False
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, role: str = "patient") -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
+        "role": role,
         "iat": now,
         "exp": now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_access_token(token: str) -> int | None:
-    """Return the user id from a valid token, or None if invalid / expired."""
+def decode_access_token(token: str, expected_role: str = "patient") -> int | None:
+    """Return a principal id for a valid token of the expected role, or None."""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        # Tokens issued before role claims existed are patient tokens for compatibility.
+        if payload.get("role", "patient") != expected_role:
+            return None
         return int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None

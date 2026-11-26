@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS "Users" (
     birth_date        DATE          NOT NULL,
     email             VARCHAR(255)  NOT NULL UNIQUE,
     registration_date DATE          NOT NULL DEFAULT CURRENT_DATE,
-    password_hash     VARCHAR(255)  -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    password_hash     VARCHAR(255), -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    is_admin          BOOLEAN       NOT NULL DEFAULT FALSE
 );
 
 -- ─────────────────────────────────────────
@@ -28,8 +29,32 @@ CREATE TABLE IF NOT EXISTS "Doctors" (
     doctor_id      SERIAL PRIMARY KEY,
     full_name      VARCHAR(255)  NOT NULL,
     specialty      VARCHAR(255),
-    license_number VARCHAR(100)  NOT NULL UNIQUE
+    license_number VARCHAR(100)  NOT NULL UNIQUE,
+    email          VARCHAR(255),
+    password_hash  VARCHAR(255)  -- bcrypt hash; NULL until an administrator provisions doctor login
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_doctors_email_lower
+    ON "Doctors" (lower(email)) WHERE email IS NOT NULL;
+
+-- Doctor applications (migration 0019). Documents live in backend/private, never in this public snapshot.
+CREATE TABLE IF NOT EXISTS "Doctor_Applications" (
+    application_id       SERIAL PRIMARY KEY,
+    full_name            VARCHAR(255) NOT NULL,
+    email                VARCHAR(255) NOT NULL,
+    specialty            VARCHAR(255) NOT NULL,
+    license_number       VARCHAR(100) NOT NULL,
+    password_hash        VARCHAR(255),
+    status               VARCHAR(20) NOT NULL DEFAULT 'pending',
+    documents            JSON NOT NULL DEFAULT '[]'::json,
+    submitted_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    reviewed_at          TIMESTAMPTZ,
+    reviewed_by_user_id  INTEGER REFERENCES "Users"(user_id),
+    rejection_reason     VARCHAR(1000)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_doctor_applications_pending_email
+    ON "Doctor_Applications" (lower(email)) WHERE status = 'pending';
+CREATE UNIQUE INDEX IF NOT EXISTS uq_doctor_applications_pending_license
+    ON "Doctor_Applications" (lower(license_number)) WHERE status = 'pending';
 
 -- ─────────────────────────────────────────
 -- Devices
