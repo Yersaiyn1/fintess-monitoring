@@ -51,9 +51,13 @@ export const routes: Routes = [
       },
       {
         path: 'settings',
-        title: 'Settings',
-        loadComponent: placeholder,
-        data: { heading: 'Profile and settings', text: 'Manage your profile and preferences. Everything is stored in your browser.', phase: 4 },
+        title: 'Settings — Devices',
+        loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings),
+      },
+      {
+        path: 'settings/devices',
+        title: 'Devices',
+        loadComponent: () => import('./pages/settings/settings').then((m) => m.Settings),
       },
       { path: '**', redirectTo: 'dashboard' },
     ],

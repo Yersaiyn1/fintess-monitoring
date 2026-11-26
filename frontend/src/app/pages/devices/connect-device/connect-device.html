@@ -1,0 +1,191 @@
+<section class="connect-panel" aria-labelledby="connect-devices-title">
+  <header class="section-head">
+    <div>
+      <h2 id="connect-devices-title">Connect a device</h2>
+      <p class="muted">Stream live heart rate over Web Bluetooth or try the built-in Demo watch.</p>
+    </div>
+  </header>
+
+  <div class="cards">
+    <!-- Bluetooth (Heart Rate) -->
+    <article class="source-card" [class.disabled]="!bt.supported" [class.live]="bt.status() === 'connected'">
+      <div class="card-top">
+        <span class="badge cobalt"><app-icon name="bluetooth" [size]="18" /></span>
+        <span class="status" aria-live="polite">{{ btStatusLabel() }}</span>
+      </div>
+
+      <h3>Bluetooth (Heart Rate)</h3>
+      <p class="muted desc">Connects to standard BLE Heart Rate monitors (0x180D). Requires a click over HTTPS or localhost.</p>
+
+      @if (!bt.supported) {
+        <p class="hint-warn" role="status">Open in Chrome or Edge (desktop or Android)</p>
+      } @else if (!bt.secureContext) {
+        <p class="hint-warn" role="status">Web Bluetooth requires HTTPS or localhost.</p>
+      }
+
+      <div class="metrics">
+        <div class="bpm">
+          <strong>{{ bt.bpm() ?? '—' }}</strong>
+          <small>bpm</small>
+        </div>
+        <div class="meta muted">
+          @if (bt.lastSentAt(); as sent) {
+            <span>Last sent {{ sent | date: 'HH:mm:ss' }}</span>
+          } @else {
+            <span>Batches every 15s</span>
+          }
+        </div>
+      </div>
+
+      @if (bt.error()) {
+        <p class="error" role="alert">{{ bt.error() }}</p>
+      }
+
+      <div class="actions">
+        @if (bt.status() === 'connected' || bt.status() === 'reconnecting') {
+          <button
+            type="button"
+            class="btn danger"
+            aria-label="Disconnect Bluetooth heart rate device"
+            (click)="disconnectBluetooth()"
+          >
+            Disconnect
+          </button>
+        } @else if (bt.canReconnect()) {
+          <button
+            type="button"
+            class="btn primary"
+            aria-label="Reconnect Bluetooth heart rate device"
+            (click)="reconnectBluetooth()"
+          >
+            Reconnect
+          </button>
+          <button
+            type="button"
+            class="btn ghost"
+            aria-label="Forget disconnected Bluetooth device"
+            (click)="disconnectBluetooth()"
+          >
+            Disconnect
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn primary"
+            aria-label="Connect Bluetooth heart rate device"
+            [disabled]="!bt.supported || !bt.secureContext || bt.status() === 'connecting'"
+            (click)="connectBluetooth()"
+          >
+            {{ bt.status() === 'connecting' ? 'Connecting…' : 'Connect' }}
+          </button>
+        }
+      </div>
+    </article>
+
+    <!-- Demo watch -->
+    <article class="source-card" [class.live]="demo.status() === 'running'">
+      <div class="card-top">
+        <span class="badge mint"><app-icon name="watch" [size]="18" /></span>
+        <span class="status" aria-live="polite">{{ demoStatusLabel() }}</span>
+      </div>
+
+      <h3>Demo watch</h3>
+      <p class="muted desc">Simulates a wrist tracker (55–120 bpm every 3s + steps) using the real batch sync API.</p>
+
+      <div class="metrics">
+        <div class="bpm">
+          <strong>{{ demo.bpm() ?? '—' }}</strong>
+          <small>bpm</small>
+        </div>
+        <div class="meta muted">
+          @if (demo.lastSentAt(); as sent) {
+            <span>Last sent {{ sent | date: 'HH:mm:ss' }}</span>
+          } @else {
+            <span>Batches every 15s</span>
+          }
+        </div>
+      </div>
+
+      @if (demo.error()) {
+        <p class="error" role="alert">{{ demo.error() }}</p>
+      }
+
+      <div class="actions">
+        @if (demo.status() === 'running') {
+          <button
+            type="button"
+            class="btn danger"
+            aria-label="Stop Demo watch simulator"
+            (click)="stopDemo()"
+          >
+            Stop
+          </button>
+          <button
+            type="button"
+            class="btn warn"
+            [class.active]="demo.highHrActive()"
+            aria-label="Simulate high heart rate on Demo watch"
+            (click)="simulateHighHr()"
+          >
+            {{ demo.highHrActive() ? 'High HR active' : 'Simulate high HR' }}
+          </button>
+        } @else {
+          <button
+            type="button"
+            class="btn primary"
+            aria-label="Start Demo watch simulator"
+            [disabled]="demo.status() === 'starting'"
+            (click)="startDemo()"
+          >
+            {{ demo.status() === 'starting' ? 'Starting…' : 'Start' }}
+          </button>
+        }
+      </div>
+    </article>
+
+    <!-- Health Connect file -->
+    <article class="source-card">
+      <div class="card-top">
+        <span class="badge amber"><app-icon name="upload" [size]="18" /></span>
+        <span class="status">File import</span>
+      </div>
+
+      <h3>Health Connect file</h3>
+      <p class="muted desc">Import exported Google Health Connect archives from the Dashboard import card.</p>
+
+      <div class="actions actions-bottom">
+        <a
+          class="btn ghost link-btn"
+          routerLink="/dashboard"
+          aria-label="Open Health Connect file import on Dashboard"
+        >
+          Go to Dashboard import
+        </a>
+      </div>
+    </article>
+  </div>
+
+  <div class="chart-wrap">
+    @if (showSourceToggle()) {
+      <div class="segmented" role="group" aria-label="Heart rate chart source">
+        <button
+          type="button"
+          [class.on]="activeChartSource() === 'bluetooth'"
+          [attr.aria-pressed]="activeChartSource() === 'bluetooth'"
+          (click)="pickChartSource('bluetooth')"
+        >
+          Bluetooth
+        </button>
+        <button
+          type="button"
+          [class.on]="activeChartSource() === 'demo'"
+          [attr.aria-pressed]="activeChartSource() === 'demo'"
+          (click)="pickChartSource('demo')"
+        >
+          Demo watch
+        </button>
+      </div>
+    }
+    <app-hr-chart [samples]="activeSamples()" [sourceLabel]="activeChartLabel()" />
+  </div>
+</section>

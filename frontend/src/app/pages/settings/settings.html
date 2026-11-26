@@ -1,0 +1,74 @@
+<div class="page">
+  <app-connect-device (deviceConnected)="loadDevices()" />
+
+  <section class="panel" aria-labelledby="devices-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="devices-title">Registered devices</h2>
+        <p class="muted">Active trackers linked to your account.</p>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="notice error" role="alert">
+        <span>{{ error() }}</span>
+        <button type="button" (click)="loadDevices()">Retry</button>
+      </div>
+    } @else if (loading()) {
+      <div class="notice" role="status">Loading your devices…</div>
+    }
+
+    <ul class="device-list" [attr.aria-busy]="loading()">
+      @for (d of devices(); track d.device_id) {
+        <li>
+          <div class="info">
+            <strong>{{ d.model }}</strong>
+            <span class="muted">Serial: {{ d.serial_number }}</span>
+          </div>
+          <div class="meta">
+            <span class="pill">{{ d.provider }}</span>
+            <span class="muted">
+              @if (d.last_sync_time) {
+                Synced {{ d.last_sync_time | date: 'medium' }}
+              } @else {
+                Never synced
+              }
+            </span>
+          </div>
+        </li>
+      } @empty {
+        @if (!loading() && !error()) {
+          <li class="empty muted">No devices yet. Connect Bluetooth, start Demo watch, or add one manually below.</li>
+        }
+      }
+    </ul>
+
+    <form class="manual-form" [formGroup]="form" (ngSubmit)="addDevice()" aria-label="Add manual device">
+      <h3>Add manual device</h3>
+      <div class="fields">
+        <label>
+          <span>Model</span>
+          <input type="text" formControlName="model" placeholder="e.g. FitBand Pro X1" />
+        </label>
+        <label>
+          <span>Serial number</span>
+          <input type="text" formControlName="serial_number" placeholder="e.g. SN-1042" />
+        </label>
+        <label>
+          <span>Provider</span>
+          <select formControlName="provider">
+            @for (p of providers; track p.value) {
+              <option [value]="p.value">{{ p.label }}</option>
+            }
+          </select>
+        </label>
+        <button type="submit" class="submit" [disabled]="saving()">
+          {{ saving() ? 'Adding…' : 'Add device' }}
+        </button>
+      </div>
+      @if (formError()) {
+        <p class="form-error" role="alert">{{ formError() }}</p>
+      }
+    </form>
+  </section>
+</div>

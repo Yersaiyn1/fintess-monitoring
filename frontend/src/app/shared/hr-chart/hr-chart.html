@@ -1,0 +1,45 @@
+<div class="hr-chart">
+  <div class="head">
+    <div>
+      <h3>{{ title() }}</h3>
+      @if (sourceLabel()) {
+        <span class="muted">{{ sourceLabel() }}</span>
+      }
+    </div>
+    @if (latestBpm(); as bpm) {
+      <span class="live-pill">{{ bpm }} <small>bpm</small></span>
+    }
+  </div>
+
+  @if (geometry(); as g) {
+    <svg
+      [attr.viewBox]="'0 0 ' + viewWidth + ' ' + viewHeight"
+      role="img"
+      [attr.aria-label]="ariaLabel()"
+      preserveAspectRatio="none"
+    >
+      <line [attr.x1]="padX" [attr.x2]="viewWidth - 12" [attr.y1]="topY" [attr.y2]="topY" class="grid-line" />
+      <line [attr.x1]="padX" [attr.x2]="viewWidth - 12" [attr.y1]="midY" [attr.y2]="midY" class="grid-line" />
+      <line [attr.x1]="padX" [attr.x2]="viewWidth - 12" [attr.y1]="bottomY" [attr.y2]="bottomY" class="grid-line" />
+
+      <text x="4" [attr.y]="topY + 4" class="axis-label">{{ g.maxLabel }}</text>
+      <text x="4" [attr.y]="midY + 4" class="axis-label">{{ g.midLabel }}</text>
+      <text x="4" [attr.y]="bottomY + 4" class="axis-label">{{ g.minLabel }}</text>
+
+      @if (g.areaPath) {
+        <path [attr.d]="g.areaPath" class="hr-area" />
+      }
+      @if (samples().length > 1) {
+        <polyline [attr.points]="g.polyline" class="hr-line" />
+      }
+      <circle [attr.cx]="g.lastX" [attr.cy]="g.lastY" r="4.5" class="hr-dot" />
+    </svg>
+    <div class="x-labels muted">
+      <span>-2m</span>
+      <span>-1m</span>
+      <span>Now</span>
+    </div>
+  } @else {
+    <p class="empty muted">Connect a Bluetooth sensor or start Demo watch to stream live heart rate.</p>
+  }
+</div>

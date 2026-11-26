@@ -1,7 +1,8 @@
 export type IconName =
   | 'dashboard' | 'activity' | 'history' | 'goals' | 'settings'
   | 'flame' | 'route' | 'clock' | 'bolt' | 'menu' | 'close' | 'bell'
-  | 'arrow-up' | 'arrow-down' | 'footsteps';
+  | 'arrow-up' | 'arrow-down' | 'footsteps'
+  | 'bluetooth' | 'watch' | 'heart' | 'upload';
 
 export type Tone = 'cobalt' | 'mint' | 'amber' | 'coral';
 
