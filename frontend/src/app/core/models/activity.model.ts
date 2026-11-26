@@ -5,6 +5,7 @@ export interface DailyActivity {
   label: string;
   steps: number;
   calories: number;
+  caloriesEstimated?: boolean;
   distanceKm: number;
   activeMinutes: number;
 }

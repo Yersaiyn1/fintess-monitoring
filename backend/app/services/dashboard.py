@@ -14,6 +14,7 @@ from app.services.workouts import aware, duration_seconds, finished_between
 DAYS = 7
 STEP_LENGTH_KM = 0.00075      # ~75 cm per step
 STEPS_PER_ACTIVE_MINUTE = 100  # simple estimate until workouts are tracked (Phase 2)
+CALORIES_PER_STEP_ESTIMATE = 0.04  # fallback estimate when steps > 0 and measured calories == 0
 _WEEKDAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
 
@@ -73,12 +74,21 @@ async def build_daily_activity(
         d = first_day + timedelta(days=i)
         steps, calories = by_day.get(d, (0, 0.0))
         w = workout_day.get(d, {"steps": 0, "kcal": 0.0, "km": 0.0, "min": 0.0})
+        total_steps = steps + int(w["steps"])
+        measured_calories = calories + w["kcal"]
+        if total_steps > 0 and measured_calories == 0.0:
+            display_calories = round(total_steps * CALORIES_PER_STEP_ESTIMATE, 1)
+            calories_estimated = True
+        else:
+            display_calories = round(measured_calories, 1)
+            calories_estimated = False
         days.append(
             DailyActivity(
                 date=d,
                 label=_WEEKDAYS[d.weekday()],
-                steps=steps + int(w["steps"]),
-                calories=round(calories + w["kcal"], 1),
+                steps=total_steps,
+                calories=display_calories,
+                caloriesEstimated=calories_estimated,
                 distanceKm=round(steps * STEP_LENGTH_KM + w["km"], 2),
                 activeMinutes=round(steps / STEPS_PER_ACTIVE_MINUTE + w["min"]),
             )

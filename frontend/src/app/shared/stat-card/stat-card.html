@@ -2,7 +2,7 @@
   <span class="chip"><app-icon [name]="data().icon" [size]="20" /></span>
   <p class="label">{{ data().label }}</p>
   <p class="value">
-    <span class="num">{{ data().value | number: digits() }}</span>
+    <span class="num">@if (data().estimated) { <span class="approx" title="Estimated from steps">≈</span> }{{ data().value | number: digits() }}</span>
     @if (data().unit) { <span class="unit">{{ data().unit }}</span> }
   </p>
   <p class="trend" [attr.data-trend]="trend()">

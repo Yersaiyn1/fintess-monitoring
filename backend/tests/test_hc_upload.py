@@ -232,8 +232,8 @@ async def test_upload_hc_zip_idempotent_and_updates_activity_totals(client, db_s
     week = dash.json()["week"]
     today = week[-1]
     assert today["steps"] == 2000
-    # 1200 * 0.04 (48.0) + 800 * 0.04 (32.0) + 120.5 = 200.5
-    assert today["calories"] == 200.5
+    assert today["calories"] == 120.5
+    assert today["caloriesEstimated"] is False
 
     for period in ("week", "month"):
         analytics = await client.get("/api/v1/analytics/workouts", params={"period": period}, headers=headers)

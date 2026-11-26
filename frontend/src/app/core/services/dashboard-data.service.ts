@@ -26,7 +26,7 @@ function emptyWeek(): DailyActivity[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);
     d.setDate(now.getDate() - (6 - i));
-    return { date: d.toISOString().slice(0, 10), label: WEEKDAYS.format(d), steps: 0, calories: 0, distanceKm: 0, activeMinutes: 0 };
+    return { date: d.toISOString().slice(0, 10), label: WEEKDAYS.format(d), steps: 0, calories: 0, caloriesEstimated: false, distanceKm: 0, activeMinutes: 0 };
   });
 }
 
@@ -77,7 +77,7 @@ export class DashboardDataService {
     const t = this.today();
     const y = this.yesterday();
     return [
-      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0 },
+      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0, estimated: Boolean(t.caloriesEstimated) },
       { id: 'distance', label: 'Distance', value: this.preferences.distanceFromKm(t.distanceKm), unit: this.preferences.distanceUnitLabel(), icon: 'route', tone: 'cobalt', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
       { id: 'active', label: 'Active time', value: t.activeMinutes, unit: 'min', icon: 'clock', tone: 'mint', change: this.delta(t.activeMinutes, y.activeMinutes), decimals: 0 },
       { id: 'workouts', label: 'Workouts today', value: this.workoutsToday(), unit: '', icon: 'bolt', tone: 'amber', change: 0, decimals: 0 },
@@ -90,7 +90,7 @@ export class DashboardDataService {
     const y = this.yesterday();
     return [
       { id: 'steps', label: 'Steps', value: t.steps, unit: '', icon: 'footsteps', tone: 'cobalt', change: this.delta(t.steps, y.steps), decimals: 0 },
-      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0 },
+      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0, estimated: Boolean(t.caloriesEstimated) },
       { id: 'distance', label: 'Distance', value: this.preferences.distanceFromKm(t.distanceKm), unit: this.preferences.distanceUnitLabel(), icon: 'route', tone: 'mint', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
       { id: 'active', label: 'Active time', value: t.activeMinutes, unit: 'min', icon: 'clock', tone: 'amber', change: this.delta(t.activeMinutes, y.activeMinutes), decimals: 0 },
     ];

@@ -10,6 +10,10 @@ class DailyActivity(BaseModel):
     label: str = Field(..., description='Short weekday label, e.g. "Mon"')
     steps: int = Field(..., ge=0, description="Step count for the day")
     calories: float = Field(..., ge=0, description="Calories burned")
+    caloriesEstimated: bool = Field(
+        default=False,
+        description="True when daily calories were estimated from steps",
+    )
     distanceKm: float = Field(..., ge=0, description="Distance in kilometres")
     activeMinutes: int = Field(..., ge=0, description="Active minutes for the day")
 

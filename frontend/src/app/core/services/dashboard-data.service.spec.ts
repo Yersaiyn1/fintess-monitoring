@@ -98,4 +98,16 @@ describe('DashboardDataService', () => {
     expect(service.today().steps).toBe(7482);
     expect(service.recentWorkouts()).toEqual([]);
   });
+
+  it('marks the calories card as estimated when caloriesEstimated is true', async () => {
+    const estimatedWeek = week().map((d, i) => (i === 6 ? { ...d, caloriesEstimated: true } : d));
+    const done = service.load();
+    answer(estimatedWeek);
+    await done;
+
+    const dashCalories = service.statCards().find((c) => c.id === 'calories');
+    const actCalories = service.activityCards().find((c) => c.id === 'calories');
+    expect(dashCalories?.estimated).toBe(true);
+    expect(actCalories?.estimated).toBe(true);
+  });
 });

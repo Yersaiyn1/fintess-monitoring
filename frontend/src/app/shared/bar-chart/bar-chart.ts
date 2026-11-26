@@ -5,6 +5,7 @@ export interface ChartBar {
   label: string;
   value: number;
   isToday?: boolean;
+  estimated?: boolean;
 }
 
 @Component({

@@ -267,10 +267,6 @@ def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthC
             _parse_spo2(cur, existing_tables, by_time, breakdown)
             _parse_sleep(cur, existing_tables, by_time, breakdown)
 
-    for reading in by_time.values():
-        if reading["steps"] is not None and reading["steps"] > 0 and reading["calories_kcal"] is None:
-            reading["calories_kcal"] = round(reading["steps"] * 0.04, 2)
-
     readings = sorted(by_time.values(), key=lambda r: r["date_time"])
     return ParsedHealthConnectData(
         readings=readings,

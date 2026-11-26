@@ -62,6 +62,7 @@ export class Dashboard {
       label: d.label,
       value: key === 'distanceKm' ? this.preferences.distanceFromKm(d.distanceKm) : d[key],
       isToday: i === week.length - 1,
+      estimated: key === 'calories' && Boolean(d.caloriesEstimated),
     }));
   });
 
@@ -69,6 +70,10 @@ export class Dashboard {
 
   protected readonly weekTotal = computed(() =>
     this.data.week().reduce((sum, d) => sum + (this.metric().key === 'distanceKm' ? this.preferences.distanceFromKm(d.distanceKm) : d[this.metric().key]), 0),
+  );
+
+  protected readonly weekTotalEstimated = computed(
+    () => this.metric().key === 'calories' && this.data.week().some((d) => d.caloriesEstimated),
   );
 
   protected readonly goalReached = computed(() => this.remaining() === 0);

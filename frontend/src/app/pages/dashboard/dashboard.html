@@ -83,7 +83,7 @@
     <div class="panel-head">
       <div>
         <h2 id="week-title">Last 7 days</h2>
-        <p class="muted">{{ weekTotal() | number: (metric().decimals ? '1.1-1' : '1.0-0') }} {{ metric().unit }} in total</p>
+        <p class="muted">@if (weekTotalEstimated()) {<span title="Includes step-based calorie estimates">≈</span>}{{ weekTotal() | number: (metric().decimals ? '1.1-1' : '1.0-0') }} {{ metric().unit }} in total</p>
       </div>
       <div class="segmented" role="group" aria-label="Chart metric">
         @for (m of metrics; track m.key) {
