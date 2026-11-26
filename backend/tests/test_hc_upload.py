@@ -200,6 +200,8 @@ async def test_upload_hc_zip_idempotent_and_updates_activity_totals(client, db_s
     assert body1["filename"] == "export.zip"
     assert body1["total_parsed"] == 6
     assert body1["inserted"] == 6
+    assert body1["updated"] == 0
+    assert body1["unchanged_skipped"] == 0
     assert body1["duplicates_skipped"] == 0
     assert body1["sleep_sessions"] == 1
     assert body1["metrics_breakdown"] == {
@@ -221,6 +223,8 @@ async def test_upload_hc_zip_idempotent_and_updates_activity_totals(client, db_s
     body2 = second.json()
     assert body2["total_parsed"] == 6
     assert body2["inserted"] == 0
+    assert body2["updated"] == 0
+    assert body2["unchanged_skipped"] == 6
     assert body2["duplicates_skipped"] == 6
     assert body2["sleep_sessions"] == 1
 

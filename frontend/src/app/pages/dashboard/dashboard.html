@@ -71,9 +71,10 @@
     }
     @if (uploadResult(); as res) {
       <p class="hc-status success" role="status">
-        Imported <strong>{{ res.inserted | number }}</strong> new records from
+        Imported <strong>{{ res.inserted | number }}</strong> new,
+        <strong>{{ res.updated | number }}</strong> updated from
         <strong>{{ res.filename }}</strong>
-        ({{ res.duplicates_skipped | number }} duplicates skipped).
+        ({{ res.unchanged_skipped | number }} unchanged@if (res.sleep_sessions > 0) {, {{ res.sleep_sessions | number }} sleep sessions}).
       </p>
     }
   </section>

@@ -20,6 +20,8 @@ class HealthConnectUploadResponse(BaseModel):
     filename: str
     total_parsed: int
     inserted: int
-    duplicates_skipped: int
+    updated: int = 0
+    unchanged_skipped: int = 0
+    duplicates_skipped: int = 0
     sleep_sessions: int = 0
     metrics_breakdown: Dict[str, int]
