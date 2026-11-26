@@ -7,14 +7,17 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import AccountUpdateRequest, LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas.doctor import DoctorLoginRequest, DoctorTokenResponse, DoctorIdentityResponse
 from app.services import auth as auth_service
 
 router = APIRouter()
 
 
 def _token_for(user: User) -> TokenResponse:
+    role = "admin" if user.is_admin else "patient"
     return TokenResponse(
-        access_token=create_access_token(user.user_id),
+        access_token=create_access_token(user.user_id, role=role),
+        role=role,
         user=UserResponse.model_validate(user),
     )
 
@@ -35,6 +38,17 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         # Same message for "no such email" and "wrong password".
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password.")
     return _token_for(user)
+
+
+@router.post("/doctor/login", response_model=DoctorTokenResponse)
+async def doctor_login(payload: DoctorLoginRequest, db: AsyncSession = Depends(get_db)):
+    doctor = await auth_service.authenticate_doctor(db, payload.email, payload.password)
+    if doctor is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password.")
+    return DoctorTokenResponse(
+        access_token=create_access_token(doctor.doctor_id, role="doctor"),
+        doctor=DoctorIdentityResponse.model_validate(doctor),
+    )
 
 
 @router.get("/me", response_model=UserResponse)

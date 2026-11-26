@@ -11,3 +11,6 @@ class Doctor(Base):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     specialty: Mapped[object] = mapped_column(String(255), nullable=True)
     license_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    # Nullable so existing doctor records remain valid until an admin provisions login access.
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)

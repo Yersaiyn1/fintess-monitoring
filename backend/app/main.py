@@ -6,15 +6,13 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.middleware import ContextSetterMiddleware, DoctorAccessLogMiddleware
+from app.api.middleware import DoctorAccessLogMiddleware
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal
 
 app = FastAPI(title="Fitness Monitoring API", version="0.1.0")
 
-# Set context before any other middleware runs
-app.add_middleware(ContextSetterMiddleware)
 app.add_middleware(DoctorAccessLogMiddleware)
 # Added last = outermost, so CORS headers are present on every response (also on errors).
 app.add_middleware(

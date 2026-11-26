@@ -1,0 +1,49 @@
+<main class="doctor-page">
+  <header class="topbar">
+    <a class="brand" routerLink="/doctor" aria-label="Pulse doctor portal">
+      <span class="mark" aria-hidden="true">P</span><strong>Pulse <small>DOCTOR</small></strong>
+    </a>
+    <div class="account">
+      <span class="avatar">{{ auth.initials() }}</span>
+      <span class="name">{{ auth.doctor()?.fullName }}</span>
+      <button type="button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  <section class="welcome">
+    <p class="eyebrow">DOCTOR PORTAL</p>
+    <h1>Welcome, {{ auth.doctor()?.fullName }}</h1>
+    <p>Your professional account overview.</p>
+  </section>
+
+  <section class="overview" aria-label="Doctor account overview">
+    <article class="summary-card status-card">
+      <span class="card-icon" aria-hidden="true">✓</span>
+      <div><p class="card-label">Account status</p><h2>Active</h2></div>
+      <span class="status-pill">Access enabled</span>
+    </article>
+
+    <article class="summary-card">
+      <span class="card-icon specialty-icon" aria-hidden="true">✚</span>
+      <div><p class="card-label">Specialty</p><h2>{{ auth.doctor()?.specialty || 'Not specified' }}</h2></div>
+    </article>
+
+    <article class="summary-card">
+      <span class="card-icon license-icon" aria-hidden="true">ID</span>
+      <div><p class="card-label">License number</p><h2>{{ auth.doctor()?.licenseNumber || 'Not available' }}</h2></div>
+    </article>
+  </section>
+
+  <section class="profile-card" aria-label="Professional profile">
+    <div class="section-heading">
+      <div><p class="eyebrow">YOUR INFORMATION</p><h2>Professional profile</h2></div>
+      <span class="profile-avatar">{{ auth.initials() }}</span>
+    </div>
+    <dl class="profile-details">
+      <div><dt>Full name</dt><dd>{{ auth.doctor()?.fullName }}</dd></div>
+      <div><dt>Email address</dt><dd>{{ auth.doctor()?.email }}</dd></div>
+      <div><dt>Specialty</dt><dd>{{ auth.doctor()?.specialty || 'Not specified' }}</dd></div>
+      <div><dt>License number</dt><dd>{{ auth.doctor()?.licenseNumber || 'Not available' }}</dd></div>
+    </dl>
+  </section>
+</main>

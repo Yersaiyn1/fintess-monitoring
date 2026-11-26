@@ -17,3 +17,4 @@ class User(Base):
     )
     # bcrypt hash (see app/core/security.py). NULL = account without a password (cannot log in).
     password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_admin: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")

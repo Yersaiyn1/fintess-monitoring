@@ -1,10 +1,11 @@
 """Authentication business logic (used by api/v1/auth.py)."""
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password, verify_password
 from app.models.user import User
+from app.models.doctor import Doctor
 from app.schemas.auth import RegisterRequest
 
 # Used to spend the same time on "unknown email" as on "wrong password".
@@ -42,3 +43,12 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User | No
         verify_password(password, _DUMMY_HASH)
         return None
     return user if verify_password(password, user.password_hash) else None
+
+
+async def authenticate_doctor(db: AsyncSession, email: str, password: str) -> Doctor | None:
+    result = await db.execute(select(Doctor).where(func.lower(Doctor.email) == email.lower()))
+    doctor = result.scalar_one_or_none()
+    if doctor is None:
+        verify_password(password, _DUMMY_HASH)
+        return None
+    return doctor if verify_password(password, doctor.password_hash) else None
