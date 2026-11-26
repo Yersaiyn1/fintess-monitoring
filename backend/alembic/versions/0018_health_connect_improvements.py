@@ -1,4 +1,4 @@
-"""Health Connect improvements: SpO2, Sleep_Sessions, end_time
+"""Health Connect improvements: SpO2, Sleep_Sessions, end_time, Devices provider
 
 Revision ID: 0018
 Revises: 0017
@@ -13,6 +13,31 @@ depends_on = None
 
 
 def upgrade() -> None:
+    op.execute("""
+        ALTER TABLE "Devices"
+        ADD COLUMN IF NOT EXISTS provider VARCHAR(32) NOT NULL DEFAULT 'manual'
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'ck_devices_provider'
+            ) THEN
+                ALTER TABLE "Devices"
+                ADD CONSTRAINT ck_devices_provider
+                CHECK (provider IN ('manual', 'health_connect', 'bluetooth', 'fitbit', 'garmin', 'demo'));
+            END IF;
+        END $$;
+    """)
+    op.execute("""
+        ALTER TABLE "Devices"
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE
+    """)
+    op.execute("""
+        UPDATE "Devices"
+        SET provider = 'health_connect'
+        WHERE serial_number LIKE 'HC-%'
+    """)
+
     op.execute("""
         ALTER TABLE "Health_Readings"
         ADD COLUMN IF NOT EXISTS spo2_percent DOUBLE PRECISION
@@ -74,3 +99,6 @@ def downgrade() -> None:
     op.execute('ALTER TABLE "Health_Readings" DROP COLUMN IF EXISTS end_time')
     op.execute('ALTER TABLE "Health_Readings" DROP CONSTRAINT IF EXISTS ck_health_readings_spo2')
     op.execute('ALTER TABLE "Health_Readings" DROP COLUMN IF EXISTS spo2_percent')
+    op.execute('ALTER TABLE "Devices" DROP CONSTRAINT IF EXISTS ck_devices_provider')
+    op.execute('ALTER TABLE "Devices" DROP COLUMN IF EXISTS provider')
+    op.execute('ALTER TABLE "Devices" DROP COLUMN IF EXISTS is_active')

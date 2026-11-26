@@ -42,6 +42,7 @@ class DeviceResponse(BaseModel):
     device_id: int
     model: str
     serial_number: str
+    provider: str = "manual"
     last_sync_time: datetime | None = None
 
 
@@ -68,6 +69,7 @@ async def list_devices(
             device_id=d.device_id,
             model=d.model,
             serial_number=d.serial_number,
+            provider=d.provider,
             last_sync_time=d.last_sync_time,
         )
         for d in devices
@@ -93,7 +95,13 @@ async def add_device(
     )
     device = result.scalar_one_or_none()
     if device is None:
-        device = Device(user_id=user.user_id, model=model, serial_number=serial_number)
+        device = Device(
+            user_id=user.user_id,
+            model=model,
+            serial_number=serial_number,
+            provider="manual",
+            is_active=True,
+        )
         db.add(device)
         await db.commit()
         await db.refresh(device)
@@ -102,6 +110,7 @@ async def add_device(
         device_id=device.device_id,
         model=device.model,
         serial_number=device.serial_number,
+        provider=device.provider,
         last_sync_time=device.last_sync_time,
     )
 
@@ -273,7 +282,11 @@ async def upload_health_connect(
 
     result = await db.execute(
         select(Device)
-        .where(Device.user_id == current_user.user_id)
+        .where(
+            Device.user_id == current_user.user_id,
+            Device.provider == "health_connect",
+            Device.is_active.is_(True),
+        )
         .order_by(Device.device_id.asc())
         .with_for_update()
     )
@@ -283,9 +296,17 @@ async def upload_health_connect(
             user_id=current_user.user_id,
             model=parsed.device_model,
             serial_number=f"HC-{current_user.user_id}",
+            provider="health_connect",
+            is_active=True,
         )
         db.add(device)
         await db.flush()
+    elif (
+        parsed.device_model
+        and parsed.device_model != "Android Health Connect"
+        and device.model != parsed.device_model
+    ):
+        device.model = parsed.device_model
 
     total_parsed = len(parsed.readings)
     upsert_res = await upsert_readings(

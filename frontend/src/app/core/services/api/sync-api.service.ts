@@ -7,6 +7,7 @@ export interface DeviceRecord {
   device_id: number;
   model: string;
   serial_number: string;
+  provider: string;
   last_sync_time: string | null;
 }
 
