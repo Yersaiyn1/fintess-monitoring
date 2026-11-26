@@ -16,11 +16,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
+from app.models.sleep_session import SleepSession
 from app.models.user import User
 from app.schemas.sync import HealthConnectUploadResponse, SyncBatchRequest, SyncBatchResponse
 from app.services.hc_importer import parse_health_connect_bytes
@@ -281,6 +283,7 @@ async def upload_health_connect(
                     "steps": reading["steps"],
                     "calories_kcal": reading["calories_kcal"],
                     "blood_pressure": reading["blood_pressure"],
+                    "spo2_percent": reading["spo2_percent"],
                 }
                 for reading in parsed.readings[i : i + HC_BATCH_SIZE]
             ]
@@ -293,22 +296,43 @@ async def upload_health_connect(
             if res.rowcount and res.rowcount > 0:
                 inserted += res.rowcount
 
+    if parsed.sleep_sessions:
+        conn = await db.connection()
+        insert_fn = sqlite_insert if conn.dialect.name == "sqlite" else pg_insert
+        for i in range(0, len(parsed.sleep_sessions), HC_BATCH_SIZE):
+            sleep_batch = [
+                {
+                    "device_id": device.device_id,
+                    "start_time": s["start_time"],
+                    "end_time": s["end_time"],
+                }
+                for s in parsed.sleep_sessions[i : i + HC_BATCH_SIZE]
+            ]
+            sleep_stmt = insert_fn(SleepSession).values(sleep_batch)
+            sleep_stmt = sleep_stmt.on_conflict_do_update(
+                index_elements=["device_id", "start_time"],
+                set_={"end_time": sleep_stmt.excluded.end_time},
+            )
+            await db.execute(sleep_stmt)
+
     device.last_sync_time = datetime.now(timezone.utc)
     await db.commit()
 
     duplicates_skipped = max(0, total_parsed - inserted)
     logger.info(
-        "Health Connect import user_id=%s device_id=%s parsed=%s inserted=%s skipped=%s",
+        "Health Connect import user_id=%s device_id=%s parsed=%s inserted=%s skipped=%s sleep_sessions=%s",
         current_user.user_id,
         device.device_id,
         total_parsed,
         inserted,
         duplicates_skipped,
+        len(parsed.sleep_sessions),
     )
     return HealthConnectUploadResponse(
         filename=filename,
         total_parsed=total_parsed,
         inserted=inserted,
         duplicates_skipped=duplicates_skipped,
+        sleep_sessions=len(parsed.sleep_sessions),
         metrics_breakdown=parsed.metrics_breakdown,
     )

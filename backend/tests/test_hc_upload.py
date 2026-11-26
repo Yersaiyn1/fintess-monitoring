@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 
 from app.models.device import Device
 from app.models.health_reading import HealthReading
+from app.models.sleep_session import SleepSession
 
 
 def _build_sample_hc_db_bytes(now_utc: datetime) -> bytes:
@@ -197,9 +198,10 @@ async def test_upload_hc_zip_idempotent_and_updates_activity_totals(client, db_s
     assert first.status_code == 200
     body1 = first.json()
     assert body1["filename"] == "export.zip"
-    assert body1["total_parsed"] == 7
-    assert body1["inserted"] == 7
+    assert body1["total_parsed"] == 6
+    assert body1["inserted"] == 6
     assert body1["duplicates_skipped"] == 0
+    assert body1["sleep_sessions"] == 1
     assert body1["metrics_breakdown"] == {
         "steps": 2,
         "heart_rate": 1,
@@ -217,12 +219,21 @@ async def test_upload_hc_zip_idempotent_and_updates_activity_totals(client, db_s
     )
     assert second.status_code == 200
     body2 = second.json()
-    assert body2["total_parsed"] == 7
+    assert body2["total_parsed"] == 6
     assert body2["inserted"] == 0
-    assert body2["duplicates_skipped"] == 7
+    assert body2["duplicates_skipped"] == 6
+    assert body2["sleep_sessions"] == 1
 
     count = (await db_session.execute(select(func.count()).select_from(HealthReading))).scalar_one()
-    assert count == 7
+    assert count == 6
+    spo2_val = (
+        await db_session.execute(
+            select(HealthReading.spo2_percent).where(HealthReading.spo2_percent.is_not(None))
+        )
+    ).scalar_one()
+    assert spo2_val == 98.5
+    sleep_count = (await db_session.execute(select(func.count()).select_from(SleepSession))).scalar_one()
+    assert sleep_count == 1
 
     device = (await db_session.execute(select(Device))).scalar_one()
     assert device.model == "POCO X7 Pro"
@@ -261,9 +272,10 @@ async def test_upload_hc_direct_db_file(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["filename"] == "health_connect_export.db"
-    assert body["total_parsed"] == 7
-    assert body["inserted"] == 7
+    assert body["total_parsed"] == 6
+    assert body["inserted"] == 6
     assert body["duplicates_skipped"] == 0
+    assert body["sleep_sessions"] == 1
 
 
 async def test_upload_hc_requires_auth_and_valid_file(client):

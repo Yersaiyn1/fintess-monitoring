@@ -15,6 +15,7 @@ export interface HealthConnectUploadResponse {
   total_parsed: number;
   inserted: number;
   duplicates_skipped: number;
+  sleep_sessions: number;
   metrics_breakdown: Record<string, number>;
 }
 

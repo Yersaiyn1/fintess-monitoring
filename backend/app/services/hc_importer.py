@@ -3,6 +3,7 @@ from contextlib import closing
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import io
+import logging
 import os
 import sqlite3
 import tempfile
@@ -10,6 +11,7 @@ import zipfile
 
 
 SQLITE_MAGIC = b"SQLite format 3\x00"
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -17,6 +19,7 @@ class ParsedHealthConnectData:
     """Normalized records and summary extracted from a Health Connect export."""
 
     readings: list[dict]
+    sleep_sessions: list[dict]
     metrics_breakdown: dict[str, int]
     device_model: str
 
@@ -43,6 +46,7 @@ def _ensure_reading(by_time: dict[datetime, dict], dt: datetime) -> dict:
             "heart_rate_bpm": None,
             "calories_kcal": None,
             "blood_pressure": None,
+            "spo2_percent": None,
         }
         by_time[dt] = reading
     return reading
@@ -221,25 +225,47 @@ def _parse_spo2(
         f"SELECT {ts_col}, percentage FROM {table} WHERE {ts_col} IS NOT NULL AND percentage IS NOT NULL"
     ).fetchall()
     for ts_ms, pct in rows:
-        if float(pct) < 0:
+        pct_val = float(pct)
+        # Matches HealthReading CheckConstraint("spo2_percent BETWEEN 0 AND 100")
+        if not (0.0 <= pct_val <= 100.0):
             continue
-        _ensure_reading(by_time, _ms_to_utc(ts_ms))
+        reading = _ensure_reading(by_time, _ms_to_utc(ts_ms))
+        reading["spo2_percent"] = round(pct_val, 2)
         _bump(breakdown, "spo2")
 
 
 def _parse_sleep(
-    cur: sqlite3.Cursor, existing_tables: set[str], by_time: dict[datetime, dict], breakdown: dict[str, int]
+    cur: sqlite3.Cursor,
+    existing_tables: set[str],
+    sleep_by_start: dict[datetime, datetime],
+    breakdown: dict[str, int],
 ) -> None:
     table = "sleep_session_record_table"
     if table not in existing_tables:
         return
     cols = _get_columns(cur, table)
-    if "start_time" not in cols:
+    missing = [c for c in ("start_time", "end_time") if c not in cols]
+    if missing:
+        logger.warning(
+            "Health Connect table '%s' is missing expected column(s): %s (available: %s)",
+            table,
+            ", ".join(missing),
+            ", ".join(sorted(cols)),
+        )
         return
-    rows = cur.execute(f"SELECT start_time FROM {table} WHERE start_time IS NOT NULL").fetchall()
-    for (start_ms,) in rows:
-        _ensure_reading(by_time, _ms_to_utc(start_ms))
-        _bump(breakdown, "sleep")
+    rows = cur.execute(
+        f"SELECT start_time, end_time FROM {table} WHERE start_time IS NOT NULL AND end_time IS NOT NULL"
+    ).fetchall()
+    for start_ms, end_ms in rows:
+        start_dt = _ms_to_utc(start_ms)
+        end_dt = _ms_to_utc(end_ms)
+        if end_dt <= start_dt:
+            continue
+        existing_end = sleep_by_start.get(start_dt)
+        if existing_end is None or end_dt > existing_end:
+            sleep_by_start[start_dt] = end_dt
+    if sleep_by_start:
+        breakdown["sleep"] = len(sleep_by_start)
 
 
 def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthConnectData:
@@ -258,6 +284,7 @@ def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthC
             }
             device_model = _extract_device_model(cur, existing_tables)
             by_time: dict[datetime, dict] = {}
+            sleep_by_start: dict[datetime, datetime] = {}
             breakdown: dict[str, int] = {}
 
             _parse_steps(cur, existing_tables, by_time, breakdown)
@@ -265,11 +292,16 @@ def parse_health_connect_bytes(data: bytes, filename: str = "") -> ParsedHealthC
             _parse_calories(cur, existing_tables, by_time, breakdown)
             _parse_blood_pressure(cur, existing_tables, by_time, breakdown)
             _parse_spo2(cur, existing_tables, by_time, breakdown)
-            _parse_sleep(cur, existing_tables, by_time, breakdown)
+            _parse_sleep(cur, existing_tables, sleep_by_start, breakdown)
 
     readings = sorted(by_time.values(), key=lambda r: r["date_time"])
+    sleep_sessions = [
+        {"start_time": start_dt, "end_time": end_dt}
+        for start_dt, end_dt in sorted(sleep_by_start.items())
+    ]
     return ParsedHealthConnectData(
         readings=readings,
+        sleep_sessions=sleep_sessions,
         metrics_breakdown=breakdown,
         device_model=device_model,
     )

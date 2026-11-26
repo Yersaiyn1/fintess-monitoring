@@ -47,17 +47,32 @@ CREATE TABLE IF NOT EXISTS "Devices" (
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS "Health_Readings" (
     reading_id     SERIAL PRIMARY KEY,
-    device_id      INTEGER       NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
-    date_time      TIMESTAMPTZ   NOT NULL,
-    heart_rate_bpm INTEGER       CHECK (heart_rate_bpm BETWEEN 30 AND 220),
-    steps          INTEGER       CHECK (steps >= 0),
-    calories_kcal  NUMERIC(8,2)  CHECK (calories_kcal >= 0),
-    blood_pressure VARCHAR(20)
+    device_id      INTEGER          NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
+    date_time      TIMESTAMPTZ      NOT NULL,
+    heart_rate_bpm INTEGER          CHECK (heart_rate_bpm BETWEEN 30 AND 220),
+    steps          INTEGER          CHECK (steps >= 0),
+    calories_kcal  NUMERIC(8,2)     CHECK (calories_kcal >= 0),
+    blood_pressure VARCHAR(20),
+    spo2_percent   DOUBLE PRECISION CHECK (spo2_percent BETWEEN 0 AND 100)
 );
 
 -- Deduplication rule (migration 0001): no duplicate readings after a re-sync
 CREATE UNIQUE INDEX IF NOT EXISTS uq_health_readings_device_datetime
     ON "Health_Readings" (device_id, date_time);
+
+-- ─────────────────────────────────────────
+-- Sleep_Sessions  (migration 0018)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Sleep_Sessions" (
+    sleep_id   SERIAL PRIMARY KEY,
+    device_id  INTEGER     NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time   TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uq_sleep_sessions_device_start UNIQUE (device_id, start_time),
+    CONSTRAINT ck_sleep_sessions_end_after_start CHECK (end_time > start_time)
+);
+CREATE INDEX IF NOT EXISTS idx_sleep_sessions_device_start
+    ON "Sleep_Sessions" (device_id, start_time);
 
 -- ─────────────────────────────────────────
 -- Doctor_Access  (M:N bridge)

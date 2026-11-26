@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class HealthReadingBase(BaseModel):
@@ -11,6 +11,7 @@ class HealthReadingBase(BaseModel):
     steps: Optional[int] = None
     calories_kcal: Optional[float] = None
     blood_pressure: Optional[str] = None
+    spo2_percent: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class HealthReadingCreate(HealthReadingBase):
