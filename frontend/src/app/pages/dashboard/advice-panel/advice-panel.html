@@ -1,0 +1,65 @@
+<section class="panel advice" aria-labelledby="advice-title">
+  <div class="advice-head">
+    <div class="title-wrap">
+      <div class="title-row">
+        <h2 id="advice-title">Personal advice</h2>
+        @if (source() === 'ai') {
+          <span class="ai-badge" title="Rephrased using AI">AI</span>
+        }
+      </div>
+      <p class="muted">Guidance based on your recent activity and heart rate trends.</p>
+    </div>
+    <button
+      type="button"
+      class="refresh-btn"
+      [disabled]="loading()"
+      (click)="load(true)"
+    >
+      @if (loading()) {
+        Updating…
+      } @else {
+        Refresh
+      }
+    </button>
+  </div>
+
+  @if (aiAvailable()) {
+    <label class="consent-row">
+      <input
+        type="checkbox"
+        [checked]="aiConsent()"
+        [disabled]="updatingConsent() || loading()"
+        (change)="onConsentToggle($event)"
+      />
+      <span>
+        <strong>Use AI to phrase advice</strong>
+        <small>Only anonymized weekly aggregates are sent (no name, email, or raw readings).</small>
+      </span>
+    </label>
+  }
+
+  @if (loading() && items().length === 0) {
+    <p class="status-box" role="status">Analyzing your recent metrics…</p>
+  } @else if (error()) {
+    <div class="status-box error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="load(false)">Retry</button>
+    </div>
+  } @else if (items().length === 0) {
+    <p class="status-box" role="status">No recommendations right now. Everything looks steady.</p>
+  } @else {
+    <ul class="advice-list">
+      @for (item of items(); track item.code) {
+        <li class="advice-card" [attr.data-severity]="item.severity">
+          <div class="card-head">
+            <span class="severity-dot" aria-hidden="true"></span>
+            <strong>{{ item.title }}</strong>
+          </div>
+          <p>{{ item.text }}</p>
+        </li>
+      }
+    </ul>
+  }
+
+  <p class="disclaimer">{{ disclaimer() }}</p>
+</section>

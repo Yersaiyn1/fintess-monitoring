@@ -17,6 +17,8 @@ export interface StatCardData {
   change: number;
   /** Digits after the decimal point, used for formatting */
   decimals: number;
+  /** True when the displayed value is an estimate rather than directly measured */
+  estimated?: boolean;
 }
 
 export interface NavItem {

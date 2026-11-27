@@ -2,6 +2,7 @@
 # prebuilt Windows wheels for Python 3.12-3.14, so pip never needs a C/Rust compiler.
 # Tested on Python 3.12 + PostgreSQL 16.
 fastapi>=0.115,<0.125
+python-multipart>=0.0.9,<1
 uvicorn[standard]>=0.30,<0.40
 sqlalchemy>=2.0.36,<2.1
 asyncpg>=0.31,<0.32

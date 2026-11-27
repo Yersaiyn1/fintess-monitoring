@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { describeHttpError } from '../../core/http/error-message';
 import {
@@ -8,11 +8,12 @@ import {
   DeviceRecord,
   SyncApiService,
 } from '../../core/services/api/sync-api.service';
+import { SidebarMode, UserPreferencesService } from '../../core/services/user-preferences.service';
 import { ConnectDevice } from '../devices/connect-device/connect-device';
 
 @Component({
   selector: 'app-settings',
-  imports: [DatePipe, ReactiveFormsModule, ConnectDevice],
+  imports: [DatePipe, FormsModule, ReactiveFormsModule, ConnectDevice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
@@ -20,6 +21,10 @@ import { ConnectDevice } from '../devices/connect-device/connect-device';
 export class Settings {
   private readonly syncApi = inject(SyncApiService);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly preferenceService = inject(UserPreferencesService);
+
+  protected readonly preferences = this.preferenceService.preferences;
+  protected saved = false;
 
   protected readonly devices = signal<DeviceRecord[]>([]);
   protected readonly loading = signal(false);
@@ -83,5 +88,25 @@ export class Settings {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  protected setTheme(theme: 'light' | 'dark'): void {
+    this.preferenceService.update({ theme });
+    this.saved = true;
+  }
+
+  protected setDistanceUnit(distanceUnit: 'km' | 'mi'): void {
+    this.preferenceService.update({ distanceUnit });
+    this.saved = true;
+  }
+
+  protected setReducedMotion(reduceMotion: boolean): void {
+    this.preferenceService.update({ reduceMotion });
+    this.saved = true;
+  }
+
+  protected setSidebarMode(sidebarMode: SidebarMode): void {
+    this.preferenceService.update({ sidebarMode });
+    this.saved = true;
   }
 }

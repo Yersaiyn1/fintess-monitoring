@@ -8,8 +8,17 @@ import { StatCardData } from '../models/stat.model';
 import { DashboardApiService } from './api/dashboard-api.service';
 import { WorkoutsApiService } from './api/workouts-api.service';
 import { AuthService } from './auth.service';
+import { UserPreferencesService } from './user-preferences.service';
 
 const WEEKDAYS = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+const DAILY_STEP_GOAL_KEY = 'pulse.dailyStepGoal';
+
+function savedStepGoal(): number {
+  try {
+    const value = Number(localStorage.getItem(DAILY_STEP_GOAL_KEY));
+    return Number.isFinite(value) && value > 0 ? value : 10_000;
+  } catch { return 10_000; }
+}
 
 /** 7 empty days ending today: shown until the real data arrives, so the page never has "no data" holes. */
 function emptyWeek(): DailyActivity[] {
@@ -17,7 +26,7 @@ function emptyWeek(): DailyActivity[] {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);
     d.setDate(now.getDate() - (6 - i));
-    return { date: d.toISOString().slice(0, 10), label: WEEKDAYS.format(d), steps: 0, calories: 0, distanceKm: 0, activeMinutes: 0 };
+    return { date: d.toISOString().slice(0, 10), label: WEEKDAYS.format(d), steps: 0, calories: 0, caloriesEstimated: false, distanceKm: 0, activeMinutes: 0 };
   });
 }
 
@@ -30,10 +39,16 @@ export class DashboardDataService {
   private readonly api = inject(DashboardApiService);
   private readonly workoutsApi = inject(WorkoutsApiService);
   private readonly auth = inject(AuthService);
+  private readonly preferences = inject(UserPreferencesService);
   private loadedForUser: number | null = null;
 
   /** Daily step goal (becomes user-editable in Phase 4). */
-  readonly dailyStepGoal = signal(10_000);
+  readonly dailyStepGoal = signal(savedStepGoal());
+
+  setDailyStepGoal(value: number): void {
+    this.dailyStepGoal.set(value);
+    try { localStorage.setItem(DAILY_STEP_GOAL_KEY, String(value)); } catch { /* storage unavailable */ }
+  }
 
   /** Last 7 days, oldest first; the last item is "today". */
   readonly week = signal<DailyActivity[]>(emptyWeek());
@@ -62,8 +77,8 @@ export class DashboardDataService {
     const t = this.today();
     const y = this.yesterday();
     return [
-      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0 },
-      { id: 'distance', label: 'Distance', value: t.distanceKm, unit: 'km', icon: 'route', tone: 'cobalt', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
+      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0, estimated: Boolean(t.caloriesEstimated) },
+      { id: 'distance', label: 'Distance', value: this.preferences.distanceFromKm(t.distanceKm), unit: this.preferences.distanceUnitLabel(), icon: 'route', tone: 'cobalt', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
       { id: 'active', label: 'Active time', value: t.activeMinutes, unit: 'min', icon: 'clock', tone: 'mint', change: this.delta(t.activeMinutes, y.activeMinutes), decimals: 0 },
       { id: 'workouts', label: 'Workouts today', value: this.workoutsToday(), unit: '', icon: 'bolt', tone: 'amber', change: 0, decimals: 0 },
     ];
@@ -75,8 +90,8 @@ export class DashboardDataService {
     const y = this.yesterday();
     return [
       { id: 'steps', label: 'Steps', value: t.steps, unit: '', icon: 'footsteps', tone: 'cobalt', change: this.delta(t.steps, y.steps), decimals: 0 },
-      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0 },
-      { id: 'distance', label: 'Distance', value: t.distanceKm, unit: 'km', icon: 'route', tone: 'mint', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
+      { id: 'calories', label: 'Calories burned', value: t.calories, unit: 'kcal', icon: 'flame', tone: 'coral', change: this.delta(t.calories, y.calories), decimals: 0, estimated: Boolean(t.caloriesEstimated) },
+      { id: 'distance', label: 'Distance', value: this.preferences.distanceFromKm(t.distanceKm), unit: this.preferences.distanceUnitLabel(), icon: 'route', tone: 'mint', change: this.delta(t.distanceKm, y.distanceKm), decimals: 1 },
       { id: 'active', label: 'Active time', value: t.activeMinutes, unit: 'min', icon: 'clock', tone: 'amber', change: this.delta(t.activeMinutes, y.activeMinutes), decimals: 0 },
     ];
   });

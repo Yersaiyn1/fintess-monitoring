@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS "Users" (
     birth_date        DATE          NOT NULL,
     email             VARCHAR(255)  NOT NULL UNIQUE,
     registration_date DATE          NOT NULL DEFAULT CURRENT_DATE,
-    password_hash     VARCHAR(255)  -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    password_hash     VARCHAR(255), -- bcrypt hash (migration 0015, Phase 1 auth); NULL = cannot log in
+    ai_advice_consent BOOLEAN       NOT NULL DEFAULT FALSE
 );
 
 -- ─────────────────────────────────────────
@@ -42,7 +43,9 @@ CREATE TABLE IF NOT EXISTS "Devices" (
     provider       VARCHAR(32)   NOT NULL DEFAULT 'manual',
     is_active      BOOLEAN       NOT NULL DEFAULT TRUE,
     last_sync_time TIMESTAMPTZ,
-    CONSTRAINT ck_devices_provider CHECK (provider IN ('manual', 'health_connect', 'bluetooth', 'fitbit', 'garmin', 'demo'))
+    CONSTRAINT ck_devices_provider CHECK (
+        provider IN ('manual', 'health_connect', 'bluetooth', 'fitbit', 'garmin', 'demo')
+    )
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_active_user_provider_serial
@@ -54,17 +57,34 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_devices_active_user_provider_serial
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS "Health_Readings" (
     reading_id     SERIAL PRIMARY KEY,
-    device_id      INTEGER       NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
-    date_time      TIMESTAMPTZ   NOT NULL,
-    heart_rate_bpm INTEGER       CHECK (heart_rate_bpm BETWEEN 30 AND 220),
-    steps          INTEGER       CHECK (steps >= 0),
-    calories_kcal  NUMERIC(8,2)  CHECK (calories_kcal >= 0),
-    blood_pressure VARCHAR(20)
+    device_id      INTEGER          NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
+    date_time      TIMESTAMPTZ      NOT NULL,
+    end_time       TIMESTAMPTZ,
+    heart_rate_bpm INTEGER          CHECK (heart_rate_bpm BETWEEN 30 AND 220),
+    steps          INTEGER          CHECK (steps >= 0),
+    calories_kcal  NUMERIC(8,2)     CHECK (calories_kcal >= 0),
+    blood_pressure VARCHAR(20),
+    spo2_percent   DOUBLE PRECISION CHECK (spo2_percent BETWEEN 0 AND 100),
+    CONSTRAINT ck_health_readings_end_after_start CHECK (end_time IS NULL OR end_time >= date_time)
 );
 
 -- Deduplication rule (migration 0001): no duplicate readings after a re-sync
 CREATE UNIQUE INDEX IF NOT EXISTS uq_health_readings_device_datetime
     ON "Health_Readings" (device_id, date_time);
+
+-- ─────────────────────────────────────────
+-- Sleep_Sessions  (migration 0018)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Sleep_Sessions" (
+    sleep_id   SERIAL PRIMARY KEY,
+    device_id  INTEGER     NOT NULL REFERENCES "Devices"(device_id) ON DELETE RESTRICT,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time   TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uq_sleep_sessions_device_start UNIQUE (device_id, start_time),
+    CONSTRAINT ck_sleep_sessions_end_after_start CHECK (end_time > start_time)
+);
+CREATE INDEX IF NOT EXISTS idx_sleep_sessions_device_start
+    ON "Sleep_Sessions" (device_id, start_time);
 
 -- ─────────────────────────────────────────
 -- Doctor_Access  (M:N bridge)
@@ -153,3 +173,28 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_workouts_one_active_per_user ON "Workouts" 
 -- history / analytics queries (user + date range, optionally kind)
 CREATE INDEX IF NOT EXISTS idx_workouts_user_started      ON "Workouts" (user_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_workouts_user_kind_started ON "Workouts" (user_id, kind, started_at DESC);
+
+-- ─────────────────────────────────────────
+-- User_Goals  (migration 0019)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "User_Goals" (
+    user_id         INTEGER     PRIMARY KEY REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    steps_daily     INTEGER     NOT NULL DEFAULT 10000,
+    workouts_weekly INTEGER     NOT NULL DEFAULT 3,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT ck_user_goals_steps_daily CHECK (steps_daily BETWEEN 1000 AND 100000),
+    CONSTRAINT ck_user_goals_workouts_weekly CHECK (workouts_weekly BETWEEN 0 AND 14)
+);
+
+-- ─────────────────────────────────────────
+-- Advice_Cache  (migration 0019)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS "Advice_Cache" (
+    user_id         INTEGER     NOT NULL REFERENCES "Users"(user_id) ON DELETE CASCADE,
+    lang            VARCHAR(10) NOT NULL,
+    metrics_hash    VARCHAR(64) NOT NULL,
+    payload         JSONB       NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_refresh_at TIMESTAMPTZ,
+    CONSTRAINT pk_advice_cache PRIMARY KEY (user_id, lang)
+);

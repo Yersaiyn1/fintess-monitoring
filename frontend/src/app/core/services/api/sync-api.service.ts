@@ -30,10 +30,12 @@ export interface CreateDeviceInput {
 export interface SyncReadingInput {
   device_id?: number;
   date_time: string;
+  end_time?: string | null;
   heart_rate_bpm?: number | null;
   steps?: number | null;
   calories_kcal?: number | null;
   blood_pressure?: string | null;
+  spo2_percent?: number | null;
 }
 
 export interface SyncBatchResponse {
@@ -42,16 +44,42 @@ export interface SyncBatchResponse {
   skipped_count: number;
 }
 
+export interface HealthConnectUploadResponse {
+  filename: string;
+  total_parsed: number;
+  inserted: number;
+  updated: number;
+  unchanged_skipped: number;
+  duplicates_skipped: number;
+  sleep_sessions: number;
+  metrics_breakdown: Record<string, number>;
+}
+
 /**
- * Typed HTTP client for device management and batch reading synchronization.
+ * Typed HTTP client for device management, Health Connect archive uploads,
+ * and batch reading synchronization.
  */
 @Injectable({ providedIn: 'root' })
 export class SyncApiService {
   private readonly http = inject(HttpClient);
   private readonly url = `${inject(API_BASE_URL)}/sync`;
 
+  uploadHealthConnectArchive(file: File): Observable<HealthConnectUploadResponse> {
+    const body = new FormData();
+    body.append('file', file);
+    return this.http.post<HealthConnectUploadResponse>(`${this.url}/upload-hc`, body);
+  }
+
+  devices(): Observable<DeviceRecord[]> {
+    return this.listDevices();
+  }
+
   listDevices(): Observable<DeviceRecord[]> {
     return this.http.get<DeviceRecord[]>(`${this.url}/devices`);
+  }
+
+  addDevice(model: string, serialNumber: string): Observable<DeviceRecord> {
+    return this.createDevice({ model, serial_number: serialNumber });
   }
 
   createDevice(payload: CreateDeviceInput): Observable<DeviceRecord> {
@@ -60,6 +88,17 @@ export class SyncApiService {
 
   ensureDevice(provider: DeviceProvider, name: string): Observable<DeviceRecord> {
     return this.http.post<DeviceRecord>(`${this.url}/devices/ensure`, { provider, name });
+  }
+
+  createReading(body: {
+    device_id: number;
+    date_time: string;
+    heart_rate_bpm: number | null;
+    steps: number | null;
+    calories_kcal: number | null;
+    blood_pressure: string | null;
+  }): Observable<{ reading_id: number; status: string }> {
+    return this.http.post<{ reading_id: number; status: string }>(`${this.url}/reading`, body);
   }
 
   batch(deviceId: number, readings: SyncReadingInput[]): Observable<SyncBatchResponse> {

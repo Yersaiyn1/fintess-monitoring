@@ -32,12 +32,62 @@
     }
   </section>
 
+  <!-- Health Connect import -->
+  <section class="panel hc-import" aria-labelledby="hc-import-title">
+    <div class="hc-head">
+      <div>
+        <h2 id="hc-import-title">Health Connect import</h2>
+        <p class="muted">Upload an Android Health Connect export (<code>.zip</code> or <code>.db</code>) to sync your metrics.</p>
+      </div>
+      <div class="hc-actions">
+        <input
+          #hcFileInput
+          type="file"
+          accept=".zip,.db"
+          hidden
+          [disabled]="isUploading()"
+          (change)="onFileSelected($event)"
+        />
+        <button
+          type="button"
+          class="hc-btn"
+          [disabled]="isUploading()"
+          (click)="hcFileInput.click()"
+        >
+          @if (isUploading()) {
+            Importing…
+          } @else {
+            Import .zip / .db
+          }
+        </button>
+      </div>
+    </div>
+
+    @if (isUploading()) {
+      <p class="hc-status" role="status">Parsing and importing Health Connect records…</p>
+    }
+    @if (uploadError()) {
+      <p class="hc-status error" role="alert">{{ uploadError() }}</p>
+    }
+    @if (uploadResult(); as res) {
+      <p class="hc-status success" role="status">
+        Imported <strong>{{ res.inserted | number }}</strong> new,
+        <strong>{{ res.updated | number }}</strong> updated from
+        <strong>{{ res.filename }}</strong>
+        ({{ res.unchanged_skipped | number }} unchanged@if (res.sleep_sessions > 0) {, {{ res.sleep_sessions | number }} sleep sessions}).
+      </p>
+    }
+  </section>
+
+  <!-- Personalized advice -->
+  <app-advice-panel class="advice-slot" />
+
   <!-- Weekly chart -->
   <section class="panel weekly" aria-labelledby="week-title">
     <div class="panel-head">
       <div>
         <h2 id="week-title">Last 7 days</h2>
-        <p class="muted">{{ weekTotal() | number: (metric().decimals ? '1.1-1' : '1.0-0') }} {{ metric().unit }} in total</p>
+        <p class="muted">@if (weekTotalEstimated()) {<span title="Includes step-based calorie estimates">≈</span>}{{ weekTotal() | number: (metric().decimals ? '1.1-1' : '1.0-0') }} {{ metric().unit }} in total</p>
       </div>
       <div class="segmented" role="group" aria-label="Chart metric">
         @for (m of metrics; track m.key) {

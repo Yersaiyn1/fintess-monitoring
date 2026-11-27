@@ -7,10 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field
 class HealthReadingBase(BaseModel):
     device_id: Optional[int] = None
     date_time: datetime
+    end_time: Optional[datetime] = None
     heart_rate_bpm: Optional[int] = Field(default=None, ge=30, le=220)
     steps: Optional[int] = Field(default=None, ge=0)
     calories_kcal: Optional[float] = Field(default=None, ge=0)
     blood_pressure: Optional[str] = Field(default=None, max_length=20)
+    spo2_percent: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class HealthReadingCreate(HealthReadingBase):

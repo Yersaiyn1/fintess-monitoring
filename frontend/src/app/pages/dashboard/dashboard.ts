@@ -1,10 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { firstValueFrom } from 'rxjs';
+import { describeHttpError } from '../../core/http/error-message';
 import { WeeklyMetric } from '../../core/models/activity.model';
+import { HealthConnectUploadResponse, SyncApiService } from '../../core/services/api/sync-api.service';
 import { DashboardDataService } from '../../core/services/dashboard-data.service';
+import { WorkoutTrackerService } from '../../core/services/workout-tracker.service';
 import { BarChart, ChartBar } from '../../shared/bar-chart/bar-chart';
 import { ProgressRing } from '../../shared/progress-ring/progress-ring';
 import { StatCard } from '../../shared/stat-card/stat-card';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { AdvicePanel } from './advice-panel/advice-panel';
 
 interface MetricOption {
   key: WeeklyMetric;
@@ -15,13 +21,17 @@ interface MetricOption {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DecimalPipe, StatCard, ProgressRing, BarChart],
+  imports: [DecimalPipe, StatCard, ProgressRing, BarChart, AdvicePanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
   private readonly data = inject(DashboardDataService);
+  private readonly preferences = inject(UserPreferencesService);
+  private readonly syncApi = inject(SyncApiService);
+  private readonly tracker = inject(WorkoutTrackerService);
+  private readonly advicePanel = viewChild(AdvicePanel);
 
   protected readonly today = this.data.today;
   protected readonly goal = this.data.dailyStepGoal;
@@ -32,6 +42,10 @@ export class Dashboard {
   protected readonly loading = this.data.loading;
   protected readonly error = this.data.error;
 
+  protected readonly isUploading = signal(false);
+  protected readonly uploadError = signal('');
+  protected readonly uploadResult = signal<HealthConnectUploadResponse | null>(null);
+
   constructor() {
     void this.data.load();
   }
@@ -39,7 +53,7 @@ export class Dashboard {
   protected readonly metrics: MetricOption[] = [
     { key: 'steps', label: 'Steps', unit: 'steps', decimals: 0 },
     { key: 'calories', label: 'Calories', unit: 'kcal', decimals: 0 },
-    { key: 'distanceKm', label: 'Distance', unit: 'km', decimals: 1 },
+    { key: 'distanceKm', label: 'Distance', unit: this.preferences.distanceUnitLabel(), decimals: 1 },
   ];
   protected readonly metric = signal<MetricOption>(this.metrics[0]);
 
@@ -48,15 +62,20 @@ export class Dashboard {
     const key = this.metric().key;
     return week.map((d, i) => ({
       label: d.label,
-      value: d[key],
+      value: key === 'distanceKm' ? this.preferences.distanceFromKm(d.distanceKm) : d[key],
       isToday: i === week.length - 1,
+      estimated: key === 'calories' && Boolean(d.caloriesEstimated),
     }));
   });
 
   protected readonly chartGoal = computed(() => (this.metric().key === 'steps' ? this.goal() : null));
 
   protected readonly weekTotal = computed(() =>
-    this.data.week().reduce((sum, d) => sum + d[this.metric().key], 0),
+    this.data.week().reduce((sum, d) => sum + (this.metric().key === 'distanceKm' ? this.preferences.distanceFromKm(d.distanceKm) : d[this.metric().key]), 0),
+  );
+
+  protected readonly weekTotalEstimated = computed(
+    () => this.metric().key === 'calories' && this.data.week().some((d) => d.caloriesEstimated),
   );
 
   protected readonly goalReached = computed(() => this.remaining() === 0);
@@ -67,5 +86,37 @@ export class Dashboard {
 
   protected select(option: MetricOption): void {
     this.metric.set(option);
+  }
+
+  protected async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.zip') && !lower.endsWith('.db')) {
+      this.uploadError.set('Only .zip and .db Health Connect export files are supported.');
+      this.uploadResult.set(null);
+      if (input) input.value = '';
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.uploadError.set('');
+    this.uploadResult.set(null);
+    try {
+      const res = await firstValueFrom(this.syncApi.uploadHealthConnectArchive(file));
+      this.uploadResult.set(res);
+      await this.data.load();
+      void this.advicePanel()?.load();
+      if (this.tracker.ready()) {
+        await this.tracker.init();
+      }
+    } catch (e) {
+      this.uploadError.set(describeHttpError(e, 'Could not import Health Connect data.'));
+    } finally {
+      this.isUploading.set(false);
+      if (input) input.value = '';
+    }
   }
 }

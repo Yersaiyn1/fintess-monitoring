@@ -27,9 +27,9 @@
   @if (data(); as d) {
     <dl class="totals">
       <div><dt>Workouts</dt><dd>{{ d.totals.workouts }}</dd></div>
-      <div><dt>Time</dt><dd>{{ d.totals.durationMin | number: '1.0-0' }} <small>min</small></dd></div>
+      <div><dt>Active time</dt><dd>{{ d.totals.durationMin | number: '1.0-0' }} <small>min</small></dd></div>
       <div><dt>Calories</dt><dd>{{ d.totals.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
-      <div><dt>Distance</dt><dd>{{ d.totals.distanceKm | number: '1.1-1' }} <small>km</small></dd></div>
+      <div><dt>Distance</dt><dd>{{ userPreferences.distanceFromKm(d.totals.distanceKm) | number: '1.1-1' }} <small>{{ userPreferences.distanceUnitLabel() }}</small></dd></div>
       <div><dt>Steps</dt><dd>{{ d.totals.steps | number }}</dd></div>
     </dl>
 

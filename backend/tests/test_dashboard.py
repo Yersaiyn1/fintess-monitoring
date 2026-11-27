@@ -80,7 +80,34 @@ async def test_dashboard_endpoint_requires_login_and_matches_frontend_contract(c
     body = r.json()
     assert len(body["week"]) == 7
     # exactly the fields of the Angular `DailyActivity` interface
-    assert set(body["week"][0]) == {"date", "label", "steps", "calories", "distanceKm", "activeMinutes"}
+    assert set(body["week"][0]) == {
+        "date",
+        "label",
+        "steps",
+        "calories",
+        "caloriesEstimated",
+        "distanceKm",
+        "activeMinutes",
+    }
+
+
+async def test_week_estimates_calories_only_when_steps_present_and_calories_zero(db_session):
+    user, dev = await make_user_with_device(db_session, "est@example.com", "SN-EST")
+    db_session.add_all([
+        HealthReading(device_id=dev.device_id, date_time=at(TODAY, 8), steps=2000, calories_kcal=None),
+        HealthReading(device_id=dev.device_id, date_time=at(TODAY - timedelta(days=1), 8), steps=2000, calories_kcal=95.0),
+    ])
+    await db_session.commit()
+
+    week = await build_week(db_session, user.user_id, today=TODAY)
+    today_item, yesterday_item, empty_day = week[-1], week[-2], week[-3]
+    assert today_item.steps == 2000
+    assert today_item.calories == round(2000 * 0.04, 1)
+    assert today_item.caloriesEstimated is True
+    assert yesterday_item.calories == 95.0
+    assert yesterday_item.caloriesEstimated is False
+    assert empty_day.calories == 0.0
+    assert empty_day.caloriesEstimated is False
 
 
 async def test_old_unauthenticated_path_with_user_id_is_gone(client):

@@ -14,8 +14,8 @@
       @for (b of view(); track b.label + $index) {
         <div class="col" [class.today]="b.isToday">
           <div class="bar" [style.height.%]="b.height"
-               [attr.title]="b.label + ': ' + (b.value | number: digits()) + ' ' + unit()">
-            <span class="value">{{ b.value | number: digits() }}</span>
+               [attr.title]="b.label + ': ' + (b.estimated ? '≈' : '') + (b.value | number: digits()) + ' ' + unit()">
+            <span class="value">@if (b.estimated) {≈}{{ b.value | number: digits() }}</span>
           </div>
         </div>
       }

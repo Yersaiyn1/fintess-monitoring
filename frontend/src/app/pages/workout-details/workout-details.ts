@@ -6,6 +6,7 @@ import { describeHttpError } from '../../core/http/error-message';
 import { Workout } from '../../core/models/workout.model';
 import { WorkoutsApiService } from '../../core/services/api/workouts-api.service';
 import { formatDuration, formatFullDate, formatTime } from '../../core/utils/format';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 /** One workout in detail (route /history/:id, the id is bound to the `id` input by the router). */
 @Component({
@@ -17,6 +18,7 @@ import { formatDuration, formatFullDate, formatTime } from '../../core/utils/for
 })
 export class WorkoutDetails implements OnInit {
   private readonly api = inject(WorkoutsApiService);
+  protected readonly preferences = inject(UserPreferencesService);
 
   readonly id = input.required<string>();
 
@@ -31,15 +33,15 @@ export class WorkoutDetails implements OnInit {
   /** Average speed in km/h (only when the workout has a distance) */
   protected readonly speed = computed(() => {
     const w = this.workout();
-    return w?.durationSec && w.distanceKm > 0 ? w.distanceKm / (w.durationSec / 3600) : null;
+    return w?.durationSec && w.distanceKm > 0 ? this.preferences.speedFromKmh(w.distanceKm / (w.durationSec / 3600)) : null;
   });
 
   /** Average pace as "5:30" min per km */
   protected readonly pace = computed(() => {
     const w = this.workout();
     if (!w?.durationSec || w.distanceKm <= 0) return null;
-    const secPerKm = w.durationSec / w.distanceKm;
-    return `${Math.floor(secPerKm / 60)}:${String(Math.round(secPerKm % 60) % 60).padStart(2, '0')}`;
+    const secPerUnit = this.preferences.paceSecondsFromKm(w.durationSec / w.distanceKm);
+    return `${Math.floor(secPerUnit / 60)}:${String(Math.round(secPerUnit % 60) % 60).padStart(2, '0')}`;
   });
 
   protected readonly kcalPerMin = computed(() => {

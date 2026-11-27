@@ -33,6 +33,18 @@ class Settings(BaseSettings):
     # Comma-separated list of origins that may call the API from a browser.
     CORS_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"
 
+    # Health Connect upload limits
+    MAX_UPLOAD_MB: int = 50
+    MAX_UNPACKED_MB: int = 300
+    MAX_HC_RECORDS: int = 500_000
+
+    # Optional LLM layer for personalized advice (disabled by default)
+    ADVICE_LLM_ENABLED: bool = False
+    ADVICE_LLM_API_KEY: str = ""
+    ADVICE_LLM_MODEL: str = "claude-3-5-haiku-latest"
+    ADVICE_LLM_TIMEOUT_S: float = 10.0
+    ADVICE_CACHE_TTL_MIN: int = 360
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

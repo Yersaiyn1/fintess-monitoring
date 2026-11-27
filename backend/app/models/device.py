@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,7 +13,7 @@ class Device(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "provider IN ('manual','health_connect','bluetooth','fitbit','garmin','demo')",
+            "provider IN ('manual', 'health_connect', 'bluetooth', 'fitbit', 'garmin', 'demo')",
             name="ck_devices_provider",
         ),
         Index(
@@ -37,6 +39,6 @@ class Device(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, server_default=text("true")
     )
-    last_sync_time: Mapped[object] = mapped_column(
+    last_sync_time: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

@@ -1,5 +1,5 @@
 """
-Device sync and registration endpoints.
+Device sync, registration, and Health Connect import endpoints.
 
 Security & correctness guarantees:
 - SELECT ... FOR UPDATE on Devices row prevents parallel-sync races.
@@ -7,15 +7,19 @@ Security & correctness guarantees:
 - Both INSERT and UPDATE run in a single DB transaction.
 """
 import logging
+import sqlite3
+import zipfile
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select, text, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.device import Device
 from app.models.health_reading import HealthReading
@@ -24,21 +28,35 @@ from app.schemas.sync import (
     DeviceCreateRequest,
     DeviceEnsureRequest,
     DeviceResponse,
+    HealthConnectUploadResponse,
     SyncBatchRequest,
     SyncBatchResponse,
 )
+from app.services.hc_importer import parse_health_connect_bytes
+from app.services.sync import upsert_readings, upsert_sleep_sessions
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+HC_BATCH_SIZE = 500
+_UPLOAD_CHUNK_SIZE = 1024 * 1024  # 1 MiB
 
 _PROVIDER_SERIAL_PREFIX: dict[str, str] = {
     "bluetooth": "BLE",
     "demo": "DEMO",
-    "health_connect": "HEALTH_CONNECT",
+    "health_connect": "HC",
     "manual": "MANUAL",
     "fitbit": "FITBIT",
     "garmin": "GARMIN",
 }
+
+
+class ReadingCreateRequest(BaseModel):
+    device_id: int
+    date_time: datetime
+    heart_rate_bpm: int | None = Field(default=None, ge=30, le=220)
+    steps: int | None = Field(default=None, ge=0)
+    calories_kcal: float | None = Field(default=None, ge=0)
+    blood_pressure: str | None = Field(default=None, max_length=20)
 
 
 def _build_ensure_serial(provider: str, user_id: int) -> str:
@@ -66,7 +84,20 @@ async def create_device(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Register a new device for the authenticated user."""
+    """Register a new device for the authenticated user (returns existing active match if present)."""
+    existing = (
+        await db.execute(
+            select(Device).where(
+                Device.user_id == user.user_id,
+                Device.provider == payload.provider,
+                Device.serial_number == payload.serial_number,
+                Device.is_active.is_(True),
+            )
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        return existing
+
     device = Device(
         user_id=user.user_id,
         model=payload.model,
@@ -125,6 +156,46 @@ async def ensure_device(
     return (await db.execute(stmt)).scalar_one()
 
 
+@router.post("/reading", status_code=status.HTTP_201_CREATED)
+async def create_reading(
+    payload: ReadingCreateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Record a single manual reading for an owned device."""
+    result = await db.execute(
+        select(Device).where(
+            Device.device_id == payload.device_id,
+            Device.user_id == user.user_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Device not found.")
+
+    reading = HealthReading(
+        device_id=payload.device_id,
+        date_time=payload.date_time,
+        heart_rate_bpm=payload.heart_rate_bpm,
+        steps=payload.steps,
+        calories_kcal=payload.calories_kcal,
+        blood_pressure=payload.blood_pressure,
+    )
+    db.add(reading)
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "A reading at this time already exists.")
+    await db.refresh(reading)
+    await db.execute(
+        update(Device)
+        .where(Device.device_id == payload.device_id)
+        .values(last_sync_time=datetime.now(timezone.utc))
+    )
+    await db.commit()
+    return {"reading_id": reading.reading_id, "status": "saved"}
+
+
 @router.post("/batch", response_model=SyncBatchResponse, status_code=status.HTTP_200_OK)
 async def sync_batch(
     payload: SyncBatchRequest,
@@ -160,10 +231,12 @@ async def sync_batch(
             {
                 "device_id": payload.device_id,
                 "date_time": r.date_time,
+                "end_time": r.end_time,
                 "heart_rate_bpm": r.heart_rate_bpm,
                 "steps": r.steps,
                 "calories_kcal": r.calories_kcal,
                 "blood_pressure": r.blood_pressure,
+                "spo2_percent": r.spo2_percent,
             }
             for r in payload.readings
         ]
@@ -198,4 +271,119 @@ async def sync_batch(
         device_id=payload.device_id,
         synced_count=synced_count,
         skipped_count=skipped_count,
+    )
+
+
+@router.post(
+    "/upload-hc",
+    response_model=HealthConnectUploadResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def upload_health_connect(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> HealthConnectUploadResponse:
+    """Import an Android Health Connect export (.zip containing .db, or direct .db)."""
+    filename = file.filename or ""
+    if not filename.lower().endswith((".zip", ".db")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only .zip and .db files are supported.",
+        )
+
+    max_upload_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
+    chunks = bytearray()
+    while chunk := await file.read(_UPLOAD_CHUNK_SIZE):
+        if len(chunks) + len(chunk) > max_upload_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                detail=f"Uploaded file exceeds the {settings.MAX_UPLOAD_MB} MB limit.",
+            )
+        chunks.extend(chunk)
+
+    raw_bytes = bytes(chunks)
+    if not raw_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file is empty.",
+        )
+
+    try:
+        parsed = parse_health_connect_bytes(
+            raw_bytes,
+            filename=filename,
+            max_unpacked_bytes=settings.MAX_UNPACKED_MB * 1024 * 1024,
+            max_records=settings.MAX_HC_RECORDS,
+        )
+    except (ValueError, sqlite3.Error, zipfile.BadZipFile) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    result = await db.execute(
+        select(Device)
+        .where(
+            Device.user_id == current_user.user_id,
+            Device.provider == "health_connect",
+            Device.is_active.is_(True),
+        )
+        .order_by(Device.device_id.asc())
+        .with_for_update()
+    )
+    device = result.scalars().first()
+    if device is None:
+        device = Device(
+            user_id=current_user.user_id,
+            model=parsed.device_model,
+            serial_number=f"HC-{current_user.user_id}",
+            provider="health_connect",
+            is_active=True,
+        )
+        db.add(device)
+        await db.flush()
+    elif (
+        parsed.device_model
+        and parsed.device_model != "Android Health Connect"
+        and device.model != parsed.device_model
+    ):
+        device.model = parsed.device_model
+
+    total_parsed = len(parsed.readings)
+    upsert_res = await upsert_readings(
+        db,
+        device.device_id,
+        parsed.readings,
+        batch_size=HC_BATCH_SIZE,
+    )
+    sleep_count = await upsert_sleep_sessions(
+        db,
+        device.device_id,
+        parsed.sleep_sessions,
+        batch_size=HC_BATCH_SIZE,
+    )
+
+    device.last_sync_time = datetime.now(timezone.utc)
+    await db.commit()
+
+    logger.info(
+        "Health Connect import user_id=%s device_id=%s parsed=%s inserted=%s updated=%s unchanged=%s sleep_sessions=%s",
+        current_user.user_id,
+        device.device_id,
+        total_parsed,
+        upsert_res.inserted,
+        upsert_res.updated,
+        upsert_res.unchanged_skipped,
+        sleep_count,
+    )
+    return HealthConnectUploadResponse(
+        filename=filename,
+        total_parsed=total_parsed,
+        inserted=upsert_res.inserted,
+        updated=upsert_res.updated,
+        unchanged_skipped=upsert_res.unchanged_skipped,
+        duplicates_skipped=upsert_res.unchanged_skipped,
+        sleep_sessions=sleep_count,
+        metrics_breakdown=parsed.metrics_breakdown,
     )

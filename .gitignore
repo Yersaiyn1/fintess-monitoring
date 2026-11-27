@@ -12,3 +12,8 @@ build/
 .angular/
 .pytest_cache/
 *.log
+*.db
+*.sqlite
+*.sqlite3
+Здоровье и спорт.zip
+Здоровье_и_спорт.zip
