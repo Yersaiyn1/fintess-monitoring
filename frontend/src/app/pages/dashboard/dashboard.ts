@@ -10,6 +10,7 @@ import { BarChart, ChartBar } from '../../shared/bar-chart/bar-chart';
 import { ProgressRing } from '../../shared/progress-ring/progress-ring';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface MetricOption {
   key: WeeklyMetric;
@@ -20,7 +21,7 @@ interface MetricOption {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DecimalPipe, StatCard, ProgressRing, BarChart],
+  imports: [DecimalPipe, StatCard, ProgressRing, BarChart, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

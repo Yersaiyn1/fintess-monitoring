@@ -10,10 +10,11 @@ import { DeviceRecord, SyncApiService } from '../../core/services/api/sync-api.s
 import { formatClock, formatDuration } from '../../core/utils/format';
 import { StatCard } from '../../shared/stat-card/stat-card';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-activity',
-  imports: [DecimalPipe, FormsModule, RouterLink, StatCard],
+  imports: [DecimalPipe, FormsModule, RouterLink, StatCard, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './activity.html',
   styleUrl: './activity.scss',

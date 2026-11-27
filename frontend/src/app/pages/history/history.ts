@@ -9,13 +9,14 @@ import { DeviceReading, SyncApiService } from '../../core/services/api/sync-api.
 import { formatDuration, formatWhen } from '../../core/utils/format';
 import { AnalyticsPanel } from './analytics-panel/analytics-panel';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 const PAGE_SIZE = 10;
 
 /** Workout history (Phase 3): analytics on top, then a filterable list. A row opens the details page. */
 @Component({
   selector: 'app-history',
-  imports: [RouterLink, DatePipe, DecimalPipe, AnalyticsPanel],
+  imports: [RouterLink, DatePipe, DecimalPipe, AnalyticsPanel, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './history.html',
   styleUrl: './history.scss',

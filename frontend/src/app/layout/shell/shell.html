@@ -1,6 +1,6 @@
 <div class="shell" [class.open]="menuOpen()" [attr.data-sidebar-mode]="preferences().sidebarMode">
   <div class="side"><app-sidebar (navigated)="closeMenu()" (closeRequested)="closeMenu()" /></div>
-  <button type="button" class="scrim" aria-label="Close menu" tabindex="-1" (click)="closeMenu()"></button>
+  <button type="button" class="scrim" [attr.aria-label]="'Close menu' | t" tabindex="-1" (click)="closeMenu()"></button>
 
   <div class="main">
     <app-navbar [title]="pageTitle()" (menuToggle)="openMenu()" />

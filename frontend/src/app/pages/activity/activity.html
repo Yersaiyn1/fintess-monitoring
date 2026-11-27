@@ -1,44 +1,44 @@
 <div class="layout">
   <!-- Workout control -->
   <section class="tracker" [class.running]="tracker.isRunning()" aria-labelledby="tracker-title">
-    <h2 id="tracker-title" class="label">{{ tracker.isRunning() ? 'Workout in progress' : 'Start a workout' }}</h2>
+    <h2 id="tracker-title" class="label">{{ (tracker.isRunning() ? 'Workout in progress' : 'Start a workout') | t }}</h2>
 
-    <div class="kinds" role="radiogroup" aria-label="Activity type">
+    <div class="kinds" role="radiogroup" [attr.aria-label]="'Activity type' | t">
       @for (t of tracker.types(); track t.kind) {
         <button type="button" role="radio" class="kind"
                 [attr.aria-checked]="tracker.selectedKind() === t.kind"
                 [class.on]="tracker.selectedKind() === t.kind"
                 [disabled]="tracker.isRunning()"
                 (click)="tracker.select(t.kind)">
-          <span class="kind-dot" [attr.data-kind]="t.kind"></span>{{ t.label }}
+          <span class="kind-dot" [attr.data-kind]="t.kind"></span>{{ t.label | t }}
         </button>
       }
     </div>
 
     <p class="clock" role="timer" [attr.aria-label]="'Elapsed time ' + clock()">{{ clock() }}</p>
 
-    <dl class="live" [attr.aria-label]="tracker.isRunning() ? 'Estimated results so far' : 'Results'">
-      <div><dt>Steps</dt><dd>{{ tracker.live().steps | number }}</dd></div>
-      <div><dt>Distance</dt><dd>{{ preferences.distanceFromKm(tracker.live().km) | number: '1.2-2' }} <small>{{ preferences.distanceUnitLabel() }}</small></dd></div>
-      <div><dt>Calories</dt><dd>{{ tracker.live().kcal | number: '1.0-0' }} <small>kcal</small></dd></div>
+    <dl class="live" [attr.aria-label]="(tracker.isRunning() ? 'Estimated results so far' : 'Results') | t">
+      <div><dt>{{ 'Steps' | t }}</dt><dd>{{ tracker.live().steps | number }}</dd></div>
+      <div><dt>{{ 'Distance' | t }}</dt><dd>{{ preferences.distanceFromKm(tracker.live().km) | number: '1.2-2' }} <small>{{ preferences.distanceUnitLabel() }}</small></dd></div>
+      <div><dt>{{ 'Calories' | t }}</dt><dd>{{ tracker.live().kcal | number: '1.0-0' }} <small>kcal</small></dd></div>
     </dl>
     @if (tracker.isRunning()) {
-      <p class="hint">Estimates while you train. The final numbers are saved when you stop.</p>
+      <p class="hint">{{ 'Estimates while you train. The final numbers are saved when you stop.' | t }}</p>
     }
 
     @if (tracker.isRunning()) {
-      <button type="button" class="action stop" [disabled]="tracker.busy()" (click)="tracker.stop()">Stop workout</button>
+      <button type="button" class="action stop" [disabled]="tracker.busy()" (click)="tracker.stop()">{{ 'Stop workout' | t }}</button>
     } @else {
-      <button type="button" class="action start" [disabled]="tracker.busy() || !tracker.ready()" (click)="tracker.start()">Start workout</button>
+      <button type="button" class="action start" [disabled]="tracker.busy() || !tracker.ready()" (click)="tracker.start()">{{ 'Start workout' | t }}</button>
     }
 
     @if (tracker.error()) {
-      <p class="error" role="alert">{{ tracker.error() }}</p>
+      <p class="error" role="alert">{{ tracker.error() | t }}</p>
     }
   </section>
 
   <!-- Today's statistics -->
-  <section class="stats" aria-label="Today's activity">
+  <section class="stats" [attr.aria-label]="'Today\'s activity' | t">
     @for (c of cards(); track c.id) {
       <app-stat-card [data]="c" />
     }
@@ -46,36 +46,36 @@
 
   <!-- Health device and reading sync -->
   <section class="panel sync" aria-labelledby="sync-title">
-    <h2 id="sync-title">Device readings</h2>
-    <a class="history-link" routerLink="/history" fragment="device-readings">View saved readings</a>
+    <h2 id="sync-title">{{ 'Device readings' | t }}</h2>
+    <a class="history-link" routerLink="/history" fragment="device-readings">{{ 'View saved readings' | t }}</a>
     <div class="device-form">
-      <input [(ngModel)]="model" name="model" placeholder="Device model" />
-      <input [(ngModel)]="serialNumber" name="serialNumber" placeholder="Serial number" />
-      <button type="button" class="action" (click)="addDevice()">Add device</button>
+      <input [(ngModel)]="model" name="model" [placeholder]="'Device model' | t" />
+      <input [(ngModel)]="serialNumber" name="serialNumber" [placeholder]="'Serial number' | t" />
+      <button type="button" class="action" (click)="addDevice()">{{ 'Add device' | t }}</button>
     </div>
     @if (devices().length && !enteringReading()) {
-      <div><button type="button" class="action" (click)="enteringReading.set(true)">Enter reading</button></div>
+      <div><button type="button" class="action" (click)="enteringReading.set(true)">{{ 'Enter reading' | t }}</button></div>
     }
     @if (devices().length && enteringReading()) {
       <form class="reading-form" (ngSubmit)="saveReading()" ngNativeValidate>
-        <select [(ngModel)]="selectedDeviceId" name="deviceId" aria-label="Device">
+        <select [(ngModel)]="selectedDeviceId" name="deviceId" [attr.aria-label]="'Device' | t">
           @for (device of devices(); track device.device_id) {
             <option [ngValue]="device.device_id">{{ device.model }} ({{ device.serial_number }})</option>
           }
         </select>
-        <input [(ngModel)]="heartRate" name="heartRate" type="number" min="30" max="220" placeholder="Heart rate" />
-        <input [(ngModel)]="steps" name="steps" type="number" min="0" placeholder="Steps" />
-        <input [(ngModel)]="calories" name="calories" type="number" min="0" step="0.1" placeholder="Calories" />
-        <input [(ngModel)]="bloodPressure" name="bloodPressure" maxlength="20" placeholder="Blood pressure" />
-        <button type="submit" class="action" [disabled]="savingReading()">Save reading</button>
-        <button type="button" class="action cancel" [disabled]="savingReading()" (click)="cancelReading()">Cancel</button>
+        <input [(ngModel)]="heartRate" name="heartRate" type="number" min="30" max="220" [placeholder]="'Heart rate' | t" />
+        <input [(ngModel)]="steps" name="steps" type="number" min="0" [placeholder]="'Steps' | t" />
+        <input [(ngModel)]="calories" name="calories" type="number" min="0" step="0.1" [placeholder]="'Calories' | t" />
+        <input [(ngModel)]="bloodPressure" name="bloodPressure" maxlength="20" [placeholder]="'Blood pressure' | t" />
+        <button type="submit" class="action" [disabled]="savingReading()">{{ 'Save reading' | t }}</button>
+        <button type="button" class="action cancel" [disabled]="savingReading()" (click)="cancelReading()">{{ 'Cancel' | t }}</button>
       </form>
     }
     @if (syncMessage) {
-      <p class="sync-message" role="status">{{ syncMessage }}</p>
+      <p class="sync-message" role="status">{{ syncMessage | t }}</p>
     }
     @if (syncError) {
-      <p class="error" role="alert">{{ syncError }}</p>
+      <p class="error" role="alert">{{ syncError | t }}</p>
     }
   </section>
 
@@ -83,20 +83,20 @@
   <section class="panel" aria-labelledby="latest-title">
     @if (tracker.lastResult(); as r) {
       <div class="saved" role="status">
-        <strong>{{ r.kind }} saved.</strong>
+        <strong>{{ r.kind | t }} {{ 'saved.' | t }}</strong>
         {{ formatDuration(r.durationSec) }} · {{ r.steps | number }} steps · {{ preferences.distanceFromKm(r.distanceKm) | number: '1.2-2' }} {{ preferences.distanceUnitLabel() }} · {{ r.caloriesKcal | number: '1.0-0' }} kcal
       </div>
     }
-    <h2 id="latest-title">Latest workouts</h2>
+    <h2 id="latest-title">{{ 'Latest workouts' | t }}</h2>
     <ul>
       @for (w of recent(); track w.id) {
         <li>
           <span class="kind-dot" [attr.data-kind]="w.kind"></span>
-          <div class="info"><strong>{{ w.kind }}</strong><span class="muted">{{ w.when }}</span></div>
+          <div class="info"><strong>{{ w.kind | t }}</strong><span class="muted">{{ w.when | t }}</span></div>
           <div class="nums"><strong>{{ w.durationMin }} min</strong><span class="muted">{{ w.calories }} kcal</span></div>
         </li>
       } @empty {
-        <li class="empty muted">No workouts yet. Pick an activity and press Start.</li>
+        <li class="empty muted">{{ 'No workouts yet. Pick an activity and press Start.' | t }}</li>
       }
     </ul>
   </section>

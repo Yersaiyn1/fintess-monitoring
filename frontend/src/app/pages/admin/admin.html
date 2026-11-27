@@ -1,39 +1,39 @@
 <main class="admin-page">
   <header class="topbar">
     <a class="brand" routerLink="/admin"><span class="brand-mark">P</span><strong>Pulse <small>ADMIN</small></strong></a>
-    <div class="account"><span class="avatar">{{ auth.initials() }}</span><span>{{ auth.accountName() }}</span><button type="button" (click)="logout()">Log out</button></div>
+    <div class="account"><span class="avatar">{{ auth.initials() }}</span><span>{{ auth.accountName() }}</span><button type="button" (click)="logout()">{{ 'Log out' | t }}</button></div>
   </header>
 
   <section class="heading">
-    <p class="eyebrow">ADMINISTRATION</p>
-    <h1>Doctor applications</h1>
-    <p>Review the submitted professional details and verification documents.</p>
+    <p class="eyebrow">{{ 'ADMINISTRATION' | t }}</p>
+    <h1>{{ 'Doctor applications' | t }}</h1>
+    <p>{{ 'Review the submitted professional details and verification documents.' | t }}</p>
   </section>
 
-  @if (notice()) { <p class="notice" role="status">{{ notice() }}</p> }
-  @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+  @if (notice()) { <p class="notice" role="status">{{ notice() | t }}</p> }
+  @if (error()) { <p class="error" role="alert">{{ error() | t }}</p> }
 
   @if (loading()) {
-    <section class="empty"><p>Loading applications…</p></section>
+    <section class="empty"><p>{{ 'Loading applications…' | t }}</p></section>
   } @else if (applications().length === 0) {
-    <section class="empty"><span aria-hidden="true">✓</span><h2>All caught up</h2><p>There are no applications waiting for review.</p><button type="button" class="secondary" (click)="load()">Refresh</button></section>
+    <section class="empty"><span aria-hidden="true">✓</span><h2>{{ 'All caught up' | t }}</h2><p>{{ 'There are no applications waiting for review.' | t }}</p><button type="button" class="secondary" (click)="load()">{{ 'Refresh' | t }}</button></section>
   } @else {
-    <div class="list-heading"><span>{{ applications().length }} pending</span><button type="button" class="secondary" (click)="load()">Refresh</button></div>
+    <div class="list-heading"><span>{{ applications().length }} {{ 'pending' | t }}</span><button type="button" class="secondary" (click)="load()">{{ 'Refresh' | t }}</button></div>
     <section class="applications">
       @for (application of applications(); track application.application_id) {
         <article class="application-card">
           <div class="application-title">
             <div><p class="eyebrow">APPLICATION #{{ application.application_id }}</p><h2>{{ application.full_name }}</h2></div>
-            <span class="status">Pending review</span>
+            <span class="status">{{ 'Pending review' | t }}</span>
           </div>
           <dl class="details">
-            <div><dt>Email</dt><dd>{{ application.email }}</dd></div>
-            <div><dt>Specialty</dt><dd>{{ application.specialty }}</dd></div>
-            <div><dt>License number</dt><dd>{{ application.license_number }}</dd></div>
-            <div><dt>Submitted</dt><dd>{{ application.submitted_at.slice(0, 10) }}</dd></div>
+            <div><dt>{{ 'Email' | t }}</dt><dd>{{ application.email }}</dd></div>
+            <div><dt>{{ 'Specialty' | t }}</dt><dd>{{ application.specialty }}</dd></div>
+            <div><dt>{{ 'License number' | t }}</dt><dd>{{ application.license_number }}</dd></div>
+            <div><dt>{{ 'Submitted' | t }}</dt><dd>{{ application.submitted_at.slice(0, 10) }}</dd></div>
           </dl>
           <div class="documents">
-            <strong>Verification files</strong>
+            <strong>{{ 'Verification files' | t }}</strong>
             @for (doc of application.documents; track doc.document_id) {
               <button type="button" class="document" (click)="download(application, doc)">
                 <span aria-hidden="true">↓</span><span>{{ doc.filename }}</span><small>{{ (doc.size / 1024).toFixed(0) }} KB</small>
@@ -41,8 +41,8 @@
             }
           </div>
           <div class="actions">
-            <button type="button" class="reject" [disabled]="busyId() === application.application_id" (click)="reject(application)">Reject</button>
-            <button type="button" class="approve" [disabled]="busyId() === application.application_id" (click)="approve(application)">{{ busyId() === application.application_id ? 'Saving…' : 'Approve doctor' }}</button>
+            <button type="button" class="reject" [disabled]="busyId() === application.application_id" (click)="reject(application)">{{ 'Reject' | t }}</button>
+            <button type="button" class="approve" [disabled]="busyId() === application.application_id" (click)="approve(application)">{{ (busyId() === application.application_id ? 'Saving…' : 'Approve doctor') | t }}</button>
           </div>
         </article>
       }

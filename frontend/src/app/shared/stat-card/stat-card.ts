@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { DecimalPipe } from '@angular/common';
 import { StatCardData } from '../../core/models/stat.model';
 import { Icon } from '../icon/icon';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-stat-card',
-  imports: [Icon, DecimalPipe],
+  imports: [Icon, DecimalPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './stat-card.html',
   styleUrl: './stat-card.scss',

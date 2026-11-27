@@ -1,4 +1,4 @@
-<div class="chart" role="img" aria-label="Weekly activity chart">
+<div class="chart" role="img" [attr.aria-label]="'Weekly activity chart' | t">
   <div class="plot">
     @for (t of ticks(); track $index) {
       <div class="grid-line" [style.bottom.%]="(t / axisMax()) * 100">
@@ -7,7 +7,7 @@
     }
 
     @if (goalBottom() !== null) {
-      <div class="goal" [style.bottom.%]="goalBottom()"><span>Goal</span></div>
+      <div class="goal" [style.bottom.%]="goalBottom()"><span>{{ 'Goal' | t }}</span></div>
     }
 
     <div class="bars">
@@ -24,7 +24,7 @@
 
   <div class="labels">
     @for (b of view(); track b.label + $index) {
-      <span [class.today]="b.isToday">{{ b.label }}</span>
+      <span [class.today]="b.isToday">{{ b.label | t }}</span>
     }
   </div>
 </div>

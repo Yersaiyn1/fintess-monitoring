@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DoctorApplication, DoctorApplicationsService } from '../../core/services/doctor-applications.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-admin',
-  imports: [RouterLink],
+  imports: [RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './admin.html',
   styleUrl: './admin.scss',

@@ -7,11 +7,12 @@ import { Workout } from '../../core/models/workout.model';
 import { WorkoutsApiService } from '../../core/services/api/workouts-api.service';
 import { formatDuration, formatFullDate, formatTime } from '../../core/utils/format';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 /** One workout in detail (route /history/:id, the id is bound to the `id` input by the router). */
 @Component({
   selector: 'app-workout-details',
-  imports: [RouterLink, DecimalPipe],
+  imports: [RouterLink, DecimalPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './workout-details.html',
   styleUrl: './workout-details.scss',

@@ -6,6 +6,7 @@ import { Analytics, AnalyticsDay, Period } from '../../../core/models/workout.mo
 import { AnalyticsApiService } from '../../../core/services/api/analytics-api.service';
 import { BarChart, ChartBar } from '../../../shared/bar-chart/bar-chart';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 type MetricKey = keyof Pick<AnalyticsDay, 'durationMin' | 'caloriesKcal' | 'distanceKm' | 'steps'>;
 interface Metric { key: MetricKey; label: string; unit: string; decimals: number }
@@ -13,7 +14,7 @@ interface Metric { key: MetricKey; label: string; unit: string; decimals: number
 /** Weekly / monthly analytics (Phase 3): totals, a bar chart per day and a split by activity type. */
 @Component({
   selector: 'app-analytics-panel',
-  imports: [DecimalPipe, BarChart],
+  imports: [DecimalPipe, BarChart, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './analytics-panel.html',
   styleUrl: './analytics-panel.scss',

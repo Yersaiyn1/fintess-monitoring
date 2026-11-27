@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   LIMITS, birthDate, emailValidators, errorMessage, fieldsMatch, notBlank, passwordStrength,
 } from '../../../core/validators/app-validators';
+import { TranslatePipe } from '../../../core/i18n/translate.pipe';
 
 type Field = 'fullName' | 'birthDate' | 'email' | 'password' | 'confirmPassword';
 
@@ -18,7 +19,7 @@ const LABELS: Record<Field, string> = {
 
 @Component({
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './register.html',
   styleUrl: '../auth-form.scss',

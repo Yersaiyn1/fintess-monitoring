@@ -5,10 +5,11 @@ import { filter, map } from 'rxjs';
 import { Navbar } from '../navbar/navbar';
 import { Sidebar } from '../sidebar/sidebar';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, Sidebar, Navbar],
+  imports: [RouterOutlet, Sidebar, Navbar, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.html',
   styleUrl: './shell.scss',

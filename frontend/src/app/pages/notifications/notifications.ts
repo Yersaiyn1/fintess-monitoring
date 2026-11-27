@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { NotificationsApi, Reminder } from '../../core/services/api/notifications-api.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-notifications',
+  imports: [TranslatePipe],
   templateUrl: './notifications.html',
   styleUrl: './notifications.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

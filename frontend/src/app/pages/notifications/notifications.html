@@ -1,26 +1,26 @@
-<section aria-label="Doctor access reminders" [attr.aria-busy]="busy()">
+<section [attr.aria-label]="'Doctor access reminders' | t" [attr.aria-busy]="busy()">
   <header>
-    <div><h2>Doctor access reminders</h2>
-      @if (!busy() && !error()) { <p aria-live="polite">{{ unread() }} unread</p> }
+    <div><h2>{{ 'Doctor access reminders' | t }}</h2>
+      @if (!busy() && !error()) { <p aria-live="polite">{{ unread() }} {{ 'unread' | t }}</p> }
     </div>
     @if (unread() && !error()) {
-      <button [disabled]="busy()" (click)="mark()">Mark all as read</button>
+      <button [disabled]="busy()" (click)="mark()">{{ 'Mark all as read' | t }}</button>
     }
   </header>
   @if (error()) {
-    <p role="alert">{{ error() }} <button (click)="refresh()">Retry</button></p>
+    <p role="alert">{{ error() | t }} <button (click)="refresh()">{{ 'Retry' | t }}</button></p>
   } @else if (busy() && !items().length) {
-    <p role="status">Loading reminders…</p>
+    <p role="status">{{ 'Loading reminders…' | t }}</p>
   } @else {
     @for (item of items(); track item.doctor_id) {
       <article>
         <div><strong>{{ item.doctor_name }}</strong>
-          <p>Access expires in {{ item.days_left }} {{ item.days_left === 1 ? 'day' : 'days' }} · {{ item.access_end }}</p>
-          @if (item.priority === 'HIGH') { <b>High priority</b> }
+          <p>{{ 'Access expires in' | t }} {{ item.days_left }} {{ (item.days_left === 1 ? 'day' : 'days') | t }} · {{ item.access_end }}</p>
+          @if (item.priority === 'HIGH') { <b>{{ 'High priority' | t }}</b> }
         </div>
-        @if (item.is_read) { <span>Read</span> }
-        @else { <button [disabled]="busy()" (click)="mark(item)">Mark as read</button> }
+        @if (item.is_read) { <span>{{ 'Read' | t }}</span> }
+        @else { <button [disabled]="busy()" (click)="mark(item)">{{ 'Mark as read' | t }}</button> }
       </article>
-    } @empty { <p>No doctor access expires in the next seven days.</p> }
+    } @empty { <p>{{ 'No doctor access expires in the next seven days.' | t }}</p> }
   }
 </section>
