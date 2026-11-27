@@ -7,6 +7,7 @@
 - [x] **Localization** - Add more language support (Kazakh/Russian/English).
 - [ ] **Goals** - Goals are not synchronized between devices (PC/Mobile) - Further testing shows that goals are fully local.
 - [ ] **Doctor** - Implement doctor tabs/overall functional.
+- [ ] **Profile** - There is three different tab naming's, each differently explaining tab. Ex: Profile; Account; Profile; Your account details. Looks wierd.
 
 
 ## Mobile
