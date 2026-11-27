@@ -1,21 +1,21 @@
 <header class="navbar">
-  <button type="button" class="burger" aria-label="Open menu" (click)="menuToggle.emit()">
+  <button type="button" class="burger" [attr.aria-label]="'Open menu' | t" (click)="menuToggle.emit()">
     <app-icon name="menu" [size]="22" />
   </button>
 
   <div class="heading">
-    <h1>{{ title() }}</h1>
-    <p>{{ today }}</p>
+    <h1>{{ title() | t }}</h1>
+    <p>{{ today() }}</p>
   </div>
 
   <div class="actions">
-    <a class="icon-btn" routerLink="/notifications" aria-label="Notifications">
+    <a class="icon-btn" routerLink="/notifications" [attr.aria-label]="'Notifications' | t">
       <app-icon name="bell" [size]="20" />
     </a>
-    <a class="user" routerLink="/profile" aria-label="Open profile">
+    <a class="user" routerLink="/profile" [attr.aria-label]="'Open profile' | t">
       <span class="avatar" aria-hidden="true">{{ auth.initials() }}</span>
       <span class="who">{{ auth.user()?.fullName }}</span>
     </a>
-    <button type="button" class="logout" (click)="logout()">Log out</button>
+    <button type="button" class="logout" (click)="logout()">{{ 'Log out' | t }}</button>
   </div>
 </header>

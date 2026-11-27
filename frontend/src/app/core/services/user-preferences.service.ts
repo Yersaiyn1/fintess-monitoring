@@ -3,12 +3,14 @@ import { Injectable, computed, signal } from '@angular/core';
 export type DistanceUnit = 'km' | 'mi';
 export type ColorTheme = 'light' | 'dark';
 export type SidebarMode = 'hover' | 'expanded' | 'collapsed';
+export type Language = 'kk' | 'en' | 'ru';
 
 export interface UserPreferences {
   theme: ColorTheme;
   reduceMotion: boolean;
   distanceUnit: DistanceUnit;
   sidebarMode: SidebarMode;
+  language: Language;
 }
 
 const PREFERENCES_KEY = 'pulse.preferences';
@@ -47,6 +49,7 @@ export class UserPreferencesService {
     document.documentElement.dataset['theme'] = prefs.theme;
     document.documentElement.dataset['reduceMotion'] = String(prefs.reduceMotion);
     document.documentElement.dataset['sidebarMode'] = prefs.sidebarMode;
+    document.documentElement.lang = prefs.language;
   }
 
   private load(): UserPreferences {
@@ -57,9 +60,10 @@ export class UserPreferencesService {
         reduceMotion: value?.reduceMotion === true,
         distanceUnit: value?.distanceUnit === 'mi' ? 'mi' : 'km',
         sidebarMode: value?.sidebarMode === 'expanded' || value?.sidebarMode === 'collapsed' ? value.sidebarMode : 'hover',
+        language: value?.language === 'kk' || value?.language === 'ru' ? value.language : 'en',
       };
     } catch {
-      return { theme: 'light', reduceMotion: false, distanceUnit: 'km', sidebarMode: 'hover' };
+      return { theme: 'light', reduceMotion: false, distanceUnit: 'km', sidebarMode: 'hover', language: 'en' };
     }
   }
 }

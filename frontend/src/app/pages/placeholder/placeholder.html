@@ -1,5 +1,5 @@
 <section class="empty">
-  <h2>{{ info.heading }}</h2>
-  <p>{{ info.text }}</p>
-  <a routerLink="/dashboard" class="btn">Back to dashboard</a>
+  <h2>{{ info.heading | t }}</h2>
+  <p>{{ info.text | t }}</p>
+  <a routerLink="/dashboard" class="btn">{{ 'Back to dashboard' | t }}</a>
 </section>

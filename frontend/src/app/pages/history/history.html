@@ -3,25 +3,25 @@
 
   <section class="panel" aria-labelledby="list-title">
     <div class="head">
-      <h2 id="list-title">Workouts</h2>
-      <p class="muted" aria-live="polite">{{ total() }} found</p>
+      <h2 id="list-title">{{ 'Workouts' | t }}</h2>
+      <p class="muted" aria-live="polite">{{ total() }} {{ 'found' | t }}</p>
     </div>
 
-    <form class="filters" (submit)="$event.preventDefault()" aria-label="Filter workouts">
-      <label>From <input type="date" [value]="from()" [max]="to()" (change)="setFrom($event)" /></label>
-      <label>To <input type="date" [value]="to()" [min]="from()" (change)="setTo($event)" /></label>
-      <label>Type
+    <form class="filters" (submit)="$event.preventDefault()" [attr.aria-label]="'Filter workouts' | t">
+      <label>{{ 'From' | t }} <input type="date" [value]="from()" [max]="to()" (change)="setFrom($event)" /></label>
+      <label>{{ 'To' | t }} <input type="date" [value]="to()" [min]="from()" (change)="setTo($event)" /></label>
+      <label>{{ 'Type' | t }}
         <select [value]="kind()" (change)="setKind($event)">
-          <option value="">All types</option>
-          @for (k of kinds; track k) { <option [value]="k" [selected]="kind() === k">{{ k }}</option> }
+          <option value="">{{ 'All types' | t }}</option>
+          @for (k of kinds; track k) { <option [value]="k" [selected]="kind() === k">{{ k | t }}</option> }
         </select>
       </label>
-      @if (hasFilters()) { <button type="button" class="reset" (click)="resetFilters()">Reset</button> }
+      @if (hasFilters()) { <button type="button" class="reset" (click)="resetFilters()">{{ 'Reset' | t }}</button> }
     </form>
 
-    @if (rangeError()) { <p class="error" role="alert">{{ rangeError() }}</p> }
+    @if (rangeError()) { <p class="error" role="alert">{{ rangeError() | t }}</p> }
     @if (error()) {
-      <p class="error" role="alert">{{ error() }} <button type="button" class="link" (click)="reload()">Retry</button></p>
+      <p class="error" role="alert">{{ error() | t }} <button type="button" class="link" (click)="reload()">{{ 'Retry' | t }}</button></p>
     }
 
     <ul class="list">
@@ -29,34 +29,34 @@
         <li>
           <a class="row" [routerLink]="['/history', w.id]" [attr.aria-label]="w.kind + ', ' + formatWhen(w.startedAt) + ', open details'">
             <span class="kind-dot" [attr.data-kind]="w.kind"></span>
-            <span class="what"><strong>{{ w.kind }}</strong><time class="muted workout-date" [attr.datetime]="w.startedAt">{{ formatWhen(w.startedAt) }}</time></span>
-            <span class="cell"><strong>{{ formatDuration(w.durationSec) }}</strong><span class="muted">time</span></span>
-            <span class="cell opt"><strong>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} {{ preferences.distanceUnitLabel() }}</strong><span class="muted">distance</span></span>
-            <span class="cell opt"><strong>{{ w.caloriesKcal | number: '1.0-0' }} kcal</strong><span class="muted">calories</span></span>
+            <span class="what"><strong>{{ w.kind | t }}</strong><time class="muted workout-date" [attr.datetime]="w.startedAt">{{ formatWhen(w.startedAt) | t }}</time></span>
+            <span class="cell"><strong>{{ formatDuration(w.durationSec) }}</strong><span class="muted">{{ 'time' | t }}</span></span>
+            <span class="cell opt"><strong>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} {{ preferences.distanceUnitLabel() }}</strong><span class="muted">{{ 'distance' | t }}</span></span>
+            <span class="cell opt"><strong>{{ w.caloriesKcal | number: '1.0-0' }} kcal</strong><span class="muted">{{ 'calories' | t }}</span></span>
             <span class="chev" aria-hidden="true">›</span>
           </a>
         </li>
       } @empty {
         @if (!loading() && !error()) {
           <li class="empty muted">
-            {{ hasFilters() ? 'No workouts match these filters.' : 'No workouts yet. Record one on the Activity page.' }}
+            {{ (hasFilters() ? 'No workouts match these filters.' : 'No workouts yet. Record one on the Activity page.') | t }}
           </li>
         }
       }
     </ul>
 
-    @if (loading()) { <p class="muted center">Loading…</p> }
+    @if (loading()) { <p class="muted center">{{ 'Loading…' | t }}</p> }
     @if (hasMore() && !loading()) {
-      <button type="button" class="more" (click)="loadMore()">Show more ({{ total() - items().length }} left)</button>
+      <button type="button" class="more" (click)="loadMore()">{{ 'Show more' | t }} ({{ total() - items().length }} {{ 'left' | t }})</button>
     }
   </section>
 
   <section class="panel" id="device-readings" aria-labelledby="readings-title">
-    <div class="head"><h2 id="readings-title">Device readings</h2></div>
+    <div class="head"><h2 id="readings-title">{{ 'Device readings' | t }}</h2></div>
     @if (readingsError()) {
-      <p class="error" role="alert">{{ readingsError() }} <button type="button" class="link" (click)="loadReadings()">Reload readings</button></p>
+      <p class="error" role="alert">{{ readingsError() | t }} <button type="button" class="link" (click)="loadReadings()">{{ 'Reload readings' | t }}</button></p>
     }
-    @if (readingsStatus()) { <p class="muted" role="status">{{ readingsStatus() }}</p> }
+    @if (readingsStatus()) { <p class="muted" role="status">{{ readingsStatus() | t }}</p> }
     <ul class="list">
       @for (reading of readings(); track reading.reading_id) {
         <li class="reading">
@@ -67,26 +67,26 @@
               @if (reading.heart_rate_bpm !== null) { <li>{{ reading.heart_rate_bpm | number }} bpm</li> }
               @if (reading.steps !== null) { <li>{{ reading.steps | number }} steps</li> }
               @if (reading.calories_kcal !== null) { <li>{{ reading.calories_kcal | number }} kcal</li> }
-              @if (reading.blood_pressure) { <li>Blood pressure {{ reading.blood_pressure }}</li> }
+              @if (reading.blood_pressure) { <li>{{ 'Blood pressure' | t }} {{ reading.blood_pressure }}</li> }
             </ul>
           </div>
           @if (confirmingReading() === reading.reading_id) {
             <div class="reading-actions">
-              <span>Delete this reading?</span>
-              <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="deleteReading(reading.reading_id)">Confirm delete</button>
-              <button type="button" class="reading-button" [disabled]="deletingReading()" (click)="confirmingReading.set(null)">Cancel</button>
+              <span>{{ 'Delete this reading?' | t }}</span>
+              <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="deleteReading(reading.reading_id)">{{ 'Confirm delete' | t }}</button>
+              <button type="button" class="reading-button" [disabled]="deletingReading()" (click)="confirmingReading.set(null)">{{ 'Cancel' | t }}</button>
             </div>
           } @else {
-            <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="confirmingReading.set(reading.reading_id)">Delete reading</button>
+            <button type="button" class="reading-button" [disabled]="deletingReading() || readingsLoading()" (click)="confirmingReading.set(reading.reading_id)">{{ 'Delete reading' | t }}</button>
           }
         </li>
       } @empty {
-        @if (!readingsLoading() && !readingsError()) { <li class="empty muted">No saved device readings.</li> }
+        @if (!readingsLoading() && !readingsError()) { <li class="empty muted">{{ 'No saved device readings.' | t }}</li> }
       }
     </ul>
-    @if (readingsLoading()) { <p class="muted center" role="status">Loading readings…</p> }
+    @if (readingsLoading()) { <p class="muted center" role="status">{{ 'Loading readings…' | t }}</p> }
     @if (moreReadings() && !readingsLoading()) {
-      <button type="button" class="more" [disabled]="deletingReading()" (click)="loadReadings(true)">Show more readings</button>
+      <button type="button" class="more" [disabled]="deletingReading()" (click)="loadReadings(true)">{{ 'Show more readings' | t }}</button>
     }
   </section>
 </div>

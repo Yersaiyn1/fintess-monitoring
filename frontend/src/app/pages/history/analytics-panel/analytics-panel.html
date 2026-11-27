@@ -1,48 +1,48 @@
 <section class="panel" aria-labelledby="analytics-title" [attr.aria-busy]="loading()">
   <div class="head">
     <div>
-      <h2 id="analytics-title">Analytics</h2>
+      <h2 id="analytics-title">{{ 'Analytics' | t }}</h2>
       @if (data(); as d) {
-        <p class="muted">{{ d.totals.workouts }} workout{{ d.totals.workouts === 1 ? '' : 's' }} in the last {{ d.days.length }} days</p>
+        <p class="muted">{{ d.totals.workouts }} {{ (d.totals.workouts === 1 ? 'workout' : 'workouts') | t }} {{ 'in the last' | t }} {{ d.days.length }} {{ 'days' | t }}</p>
       }
     </div>
     <div class="controls">
-      <div class="segmented" role="group" aria-label="Period">
+      <div class="segmented" role="group" [attr.aria-label]="'Period' | t">
         @for (p of periods; track p.key) {
-          <button type="button" [class.on]="period() === p.key" [attr.aria-pressed]="period() === p.key" (click)="setPeriod(p.key)">{{ p.label }}</button>
+          <button type="button" [class.on]="period() === p.key" [attr.aria-pressed]="period() === p.key" (click)="setPeriod(p.key)">{{ p.label | t }}</button>
         }
       </div>
-      <div class="segmented" role="group" aria-label="Chart metric">
+      <div class="segmented" role="group" [attr.aria-label]="'Chart metric' | t">
         @for (m of metrics; track m.key) {
-          <button type="button" [class.on]="metric().key === m.key" [attr.aria-pressed]="metric().key === m.key" (click)="setMetric(m)">{{ m.label }}</button>
+          <button type="button" [class.on]="metric().key === m.key" [attr.aria-pressed]="metric().key === m.key" (click)="setMetric(m)">{{ m.label | t }}</button>
         }
       </div>
     </div>
   </div>
 
   @if (error()) {
-    <p class="error" role="alert">{{ error() }} <button type="button" class="link" (click)="load()">Retry</button></p>
+    <p class="error" role="alert">{{ error() | t }} <button type="button" class="link" (click)="load()">{{ 'Retry' | t }}</button></p>
   }
 
   @if (data(); as d) {
     <dl class="totals">
-      <div><dt>Workouts</dt><dd>{{ d.totals.workouts }}</dd></div>
-      <div><dt>Active time</dt><dd>{{ d.totals.durationMin | number: '1.0-0' }} <small>min</small></dd></div>
-      <div><dt>Calories</dt><dd>{{ d.totals.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
-      <div><dt>Distance</dt><dd>{{ userPreferences.distanceFromKm(d.totals.distanceKm) | number: '1.1-1' }} <small>{{ userPreferences.distanceUnitLabel() }}</small></dd></div>
-      <div><dt>Steps</dt><dd>{{ d.totals.steps | number }}</dd></div>
+      <div><dt>{{ 'Workouts' | t }}</dt><dd>{{ d.totals.workouts }}</dd></div>
+      <div><dt>{{ 'Active time' | t }}</dt><dd>{{ d.totals.durationMin | number: '1.0-0' }} <small>min</small></dd></div>
+      <div><dt>{{ 'Calories' | t }}</dt><dd>{{ d.totals.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
+      <div><dt>{{ 'Distance' | t }}</dt><dd>{{ userPreferences.distanceFromKm(d.totals.distanceKm) | number: '1.1-1' }} <small>{{ userPreferences.distanceUnitLabel() }}</small></dd></div>
+      <div><dt>{{ 'Steps' | t }}</dt><dd>{{ d.totals.steps | number }}</dd></div>
     </dl>
 
     <app-bar-chart [bars]="bars()" [unit]="metric().unit" [decimals]="metric().decimals" />
 
     @if (d.totals.workouts === 0) {
-      <p class="muted none">No workouts in this period yet.</p>
+      <p class="muted none">{{ 'No workouts in this period yet.' | t }}</p>
     } @else {
-      <h3>By activity type</h3>
+      <h3>{{ 'By activity type' | t }}</h3>
       <ul class="kinds">
         @for (k of d.byKind; track k.kind) {
           <li>
-            <span class="name"><span class="dot kind-dot" [attr.data-kind]="k.kind"></span>{{ k.kind }}</span>
+            <span class="name"><span class="dot kind-dot" [attr.data-kind]="k.kind"></span>{{ k.kind | t }}</span>
             <span class="track"><span class="fill kind-dot" [attr.data-kind]="k.kind" [style.width.%]="(k.durationMin / longestKind()) * 100"></span></span>
             <span class="num">{{ k.durationMin | number: '1.0-0' }} min · {{ k.workouts }}×</span>
           </li>
@@ -50,6 +50,6 @@
       </ul>
     }
   } @else if (loading()) {
-    <p class="muted none">Loading analytics…</p>
+    <p class="muted none">{{ 'Loading analytics…' | t }}</p>
   }
 </section>

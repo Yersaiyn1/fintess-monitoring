@@ -3,10 +3,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NavItem } from '../../core/models/stat.model';
 import { Icon } from '../../shared/icon/icon';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-sidebar',
-  imports: [RouterLink, RouterLinkActive, Icon],
+  imports: [RouterLink, RouterLinkActive, Icon, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sidebar.html',
   styleUrl: './sidebar.scss',
