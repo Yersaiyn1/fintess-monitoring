@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import Integer, Date, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,3 +17,4 @@ class DoctorAccess(Base):
     )
     access_start: Mapped[object] = mapped_column(Date, nullable=False)
     access_end: Mapped[object] = mapped_column(Date, nullable=False)
+    reminder_read_for: Mapped[date | None] = mapped_column(Date, nullable=True)

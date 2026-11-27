@@ -5,9 +5,10 @@ and add ONE line below.
 """
 from fastapi import APIRouter
 
-from app.api.v1 import admin, analytics, auth, dashboard, doctor, doctor_applications, sync, workouts
+from app.api.v1 import admin, analytics, auth, dashboard, doctor, doctor_applications, notifications, sync, workouts
 
 api_router = APIRouter()
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 
 # Baseline + Phase 1 (auth, dashboard)
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])

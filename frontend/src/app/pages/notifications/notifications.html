@@ -1,0 +1,26 @@
+<section aria-label="Doctor access reminders" [attr.aria-busy]="busy()">
+  <header>
+    <div><h2>Doctor access reminders</h2>
+      @if (!busy() && !error()) { <p aria-live="polite">{{ unread() }} unread</p> }
+    </div>
+    @if (unread() && !error()) {
+      <button [disabled]="busy()" (click)="mark()">Mark all as read</button>
+    }
+  </header>
+  @if (error()) {
+    <p role="alert">{{ error() }} <button (click)="refresh()">Retry</button></p>
+  } @else if (busy() && !items().length) {
+    <p role="status">Loading reminders…</p>
+  } @else {
+    @for (item of items(); track item.doctor_id) {
+      <article>
+        <div><strong>{{ item.doctor_name }}</strong>
+          <p>Access expires in {{ item.days_left }} {{ item.days_left === 1 ? 'day' : 'days' }} · {{ item.access_end }}</p>
+          @if (item.priority === 'HIGH') { <b>High priority</b> }
+        </div>
+        @if (item.is_read) { <span>Read</span> }
+        @else { <button [disabled]="busy()" (click)="mark(item)">Mark as read</button> }
+      </article>
+    } @empty { <p>No doctor access expires in the next seven days.</p> }
+  }
+</section>

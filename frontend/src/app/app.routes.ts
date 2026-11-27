@@ -37,6 +37,11 @@ export const routes: Routes = [
     component: Shell,
     canActivate: [patientGuard],
     children: [
+      {
+        path: 'notifications',
+        title: 'Notifications',
+        loadComponent: () => import('./pages/notifications/notifications').then(m => m.Notifications),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
         path: 'dashboard',

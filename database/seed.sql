@@ -63,7 +63,8 @@ ON CONFLICT (device_id, date_time) DO NOTHING;
 INSERT INTO "Doctor_Access" (user_id, doctor_id, access_start, access_end)
 SELECT u.user_id, dr.doctor_id, v.access_start, v.access_end
 FROM (VALUES
-    ('alice@example.com', 'LIC-KZ-001', CURRENT_DATE - 30,  CURRENT_DATE + 335),
+    ('alice@example.com', 'LIC-KZ-001', CURRENT_DATE - 30, CURRENT_DATE + 3),
+    ('alice@example.com', 'LIC-KZ-002', CURRENT_DATE - 7, CURRENT_DATE + 1),
     ('bob@example.com',   'LIC-KZ-002', CURRENT_DATE - 60,  CURRENT_DATE + 120),
     ('carol@example.com', 'LIC-KZ-003', CURRENT_DATE - 300, CURRENT_DATE - 30)
 ) AS v(email, license_number, access_start, access_end)
