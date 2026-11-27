@@ -1,24 +1,24 @@
 <section class="page">
-  <header><p class="eyebrow">ACCOUNT</p><h2>Profile</h2><p>Your account details.</p></header>
+  <header><p class="eyebrow">{{ 'ACCOUNT' | t }}</p><h2>{{ 'Profile' | t }}</h2><p>{{ 'Your account details.' | t }}</p></header>
   @if (auth.user(); as user) {
     <div class="profile-card">
       <div class="avatar" aria-hidden="true">{{ auth.initials() }}</div>
       <form class="details" (ngSubmit)="save()">
-        <label>Full name<input [(ngModel)]="fullName" name="fullName" required maxlength="255" autocomplete="name" /></label>
-        <label>Email<input [(ngModel)]="email" name="email" type="email" required maxlength="255" autocomplete="email" /></label>
-        <label>Date of birth<input [value]="user.birthDate" readonly /></label>
+        <label>{{ 'Full name' | t }}<input [(ngModel)]="fullName" name="fullName" required maxlength="255" autocomplete="name" /></label>
+        <label>{{ 'Email' | t }}<input [(ngModel)]="email" name="email" type="email" required maxlength="255" autocomplete="email" /></label>
+        <label>{{ 'Date of birth' | t }}<input [value]="user.birthDate" readonly /></label>
         <hr />
         @if (!changingPassword) {
-          <button class="secondary" type="button" (click)="changingPassword = true">Change password</button>
+          <button class="secondary" type="button" (click)="changingPassword = true">{{ 'Change password' | t }}</button>
         } @else {
-          <h3>Change password</h3>
-          <label>Current password<input [(ngModel)]="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required /></label>
-          <label>New password<input [(ngModel)]="newPassword" name="newPassword" type="password" minlength="8" maxlength="64" autocomplete="new-password" required /></label>
+          <h3>{{ 'Change password' | t }}</h3>
+          <label>{{ 'Current password' | t }}<input [(ngModel)]="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required /></label>
+          <label>{{ 'New password' | t }}<input [(ngModel)]="newPassword" name="newPassword" type="password" minlength="8" maxlength="64" autocomplete="new-password" required /></label>
         }
-        <button class="action" type="submit" [disabled]="saving">{{ saving ? 'Saving…' : 'Save changes' }}</button>
+        <button class="action" type="submit" [disabled]="saving">{{ (saving ? 'Saving…' : 'Save changes') | t }}</button>
         @if (error) { <p class="error" role="alert">{{ error }}</p> }
-        @if (message) { <p class="status" role="status">{{ message }}</p> }
+        @if (message) { <p class="status" role="status">{{ message | t }}</p> }
       </form>
     </div>
-  } @else { <p class="empty">Profile information is unavailable.</p> }
+  } @else { <p class="empty">{{ 'Profile information is unavailable.' | t }}</p> }
 </section>

@@ -3,10 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DoctorApplicationsService } from '../../core/services/doctor-applications.service';
 import { emailValidators, notBlank, passwordStrength } from '../../core/validators/app-validators';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 @Component({
   selector: 'app-doctor-application',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './doctor-application.html',
   styleUrl: './doctor-application.scss',

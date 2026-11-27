@@ -1,4 +1,4 @@
-<a routerLink="/history" class="back">‹ Back to history</a>
+<a routerLink="/history" class="back">‹ {{ 'Back to history' | t }}</a>
 
 @if (workout(); as w) {
   <section class="card" aria-labelledby="wd-title">
@@ -8,27 +8,27 @@
         <h2 id="wd-title">{{ w.kind }}</h2>
         <p class="muted">{{ formatFullDate(w.startedAt) }}</p>
       </div>
-      @if (w.inProgress) { <span class="badge">In progress</span> }
+      @if (w.inProgress) { <span class="badge">{{ 'In progress' | t }}</span> }
     </header>
 
     <dl class="tiles">
-      <div><dt>Duration</dt><dd>{{ formatDuration(w.durationSec) }}</dd></div>
-      <div><dt>Steps</dt><dd>{{ w.steps | number }}</dd></div>
-      <div><dt>Distance</dt><dd>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} <small>{{ preferences.distanceUnitLabel() }}</small></dd></div>
-      <div><dt>Calories</dt><dd>{{ w.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
+      <div><dt>{{ 'Duration' | t }}</dt><dd>{{ formatDuration(w.durationSec) }}</dd></div>
+      <div><dt>{{ 'Steps' | t }}</dt><dd>{{ w.steps | number }}</dd></div>
+      <div><dt>{{ 'Distance' | t }}</dt><dd>{{ preferences.distanceFromKm(w.distanceKm) | number: '1.2-2' }} <small>{{ preferences.distanceUnitLabel() }}</small></dd></div>
+      <div><dt>{{ 'Calories' | t }}</dt><dd>{{ w.caloriesKcal | number: '1.0-0' }} <small>kcal</small></dd></div>
     </dl>
 
-    <h3>Details</h3>
+    <h3>{{ 'Details' | t }}</h3>
     <dl class="rows">
-      <div><dt>Started</dt><dd>{{ formatTime(w.startedAt) }}</dd></div>
-      <div><dt>Finished</dt><dd>{{ w.endedAt ? formatTime(w.endedAt) : '—' }}</dd></div>
-      <div><dt>Average speed</dt><dd>{{ speed() === null ? '—' : (speed()! | number: '1.1-1') + ' ' + preferences.speedUnitLabel() }}</dd></div>
-      <div><dt>Average pace</dt><dd>{{ pace() === null ? '—' : pace() + ' ' + preferences.paceUnitLabel() }}</dd></div>
-      <div><dt>Energy per minute</dt><dd>{{ kcalPerMin() === null ? '—' : (kcalPerMin()! | number: '1.1-1') + ' kcal' }}</dd></div>
+      <div><dt>{{ 'Started' | t }}</dt><dd>{{ formatTime(w.startedAt) }}</dd></div>
+      <div><dt>{{ 'Finished' | t }}</dt><dd>{{ w.endedAt ? formatTime(w.endedAt) : '—' }}</dd></div>
+      <div><dt>{{ 'Average speed' | t }}</dt><dd>{{ speed() === null ? '—' : (speed()! | number: '1.1-1') + ' ' + preferences.speedUnitLabel() }}</dd></div>
+      <div><dt>{{ 'Average pace' | t }}</dt><dd>{{ pace() === null ? '—' : pace() + ' ' + preferences.paceUnitLabel() }}</dd></div>
+      <div><dt>{{ 'Energy per minute' | t }}</dt><dd>{{ kcalPerMin() === null ? '—' : (kcalPerMin()! | number: '1.1-1') + ' kcal' }}</dd></div>
     </dl>
   </section>
 } @else if (loading()) {
-  <p class="muted pad">Loading…</p>
+  <p class="muted pad">{{ 'Loading…' | t }}</p>
 } @else {
-  <p class="error" role="alert">{{ error() }}</p>
+  <p class="error" role="alert">{{ error() | t }}</p>
 }

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 export interface ChartBar {
   label: string;
@@ -9,7 +10,7 @@ export interface ChartBar {
 
 @Component({
   selector: 'app-bar-chart',
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bar-chart.html',
   styleUrl: './bar-chart.scss',

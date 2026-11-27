@@ -6,6 +6,7 @@ import { DashboardDataService } from '../../core/services/dashboard-data.service
 import { AnalyticsApiService } from '../../core/services/api/analytics-api.service';
 import { Analytics } from '../../core/models/workout.model';
 import { ProgressRing } from '../../shared/progress-ring/progress-ring';
+import { TranslatePipe } from '../../core/i18n/translate.pipe';
 
 interface Goal { id: string; label: string; unit: string; target: number }
 const GOALS_KEY = 'pulse.goals';
@@ -17,7 +18,7 @@ const DEFAULT_GOALS: Goal[] = [
 
 @Component({
   selector: 'app-goals',
-  imports: [DecimalPipe, FormsModule, ProgressRing],
+  imports: [DecimalPipe, FormsModule, ProgressRing, TranslatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './goals.html',
   styleUrl: './goals.scss',
