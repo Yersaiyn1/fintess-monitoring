@@ -4,6 +4,7 @@
 
 - [ ] **Activity** — Add boundary validation for Heart Rate and Blood Pressure readings in the device reading section.
 - [ ] **Activity** — Prevent duplicate data submissions on the Save Reading button (disable multiple rapid uploads).
+- [ ] **Localization** - Add more language support (Kazakh/Russian/English).
 
 ## Mobile
 
